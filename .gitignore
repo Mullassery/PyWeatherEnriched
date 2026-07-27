@@ -1,0 +1,35 @@
+# Rust Source Code (PROPRIETARY - excluded from distribution)
+src/
+Cargo.toml
+Cargo.lock
+build.rs
+rust-toolchain.toml
+target/
+
+# Python Build Artifacts
+build/
+dist/
+*.whl
+*.egg-info/
+__pycache__/
+*.pyc
+.eggs/
+
+# Dependencies
+.venv/
+venv/
+env/
+
+# IDE/Editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Cache
+.pytest_cache/
+.mypy_cache/
+
+# Environment
+.env
+.env.local
