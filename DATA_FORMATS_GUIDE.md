@@ -2,6 +2,8 @@
 
 PyWeatherEnriched now supports multiple input formats with automatic detection, nested data reconstruction, and multi-column address parsing for precise geocoding.
 
+> ⚡ **No API keys needed!** The library works completely out of the box. All examples below require zero configuration.
+
 ## Supported Input Formats
 
 ### 1. CSV (Comma-Separated Values)
@@ -62,117 +64,91 @@ ORD-002,456 King Road,Delhi,Delhi,110001,2025-06-15T11:00:00Z
 
 ### Example 1: Simple CSV Processing
 
-```rust
-use pyweatherenriched::{UnifiedEnrichmentPipeline, EnrichmentConfig};
+```python
+from pyweatherenriched import enricher
 
-#[tokio::main]
-async fn main() {
-    let config = EnrichmentConfig::new(
-        "your_api_key".to_string(),
-        vec!["location".to_string()],
-        "timestamp".to_string(),
-    );
-
-    let pipeline = UnifiedEnrichmentPipeline::new(config).unwrap();
-
-    let csv = r#"location,timestamp,sales
+# No API key needed!
+csv = """location,timestamp,sales
 Mumbai,2025-06-15T10:00:00Z,5000
-Delhi,2025-06-15T11:00:00Z,3000"#;
+Delhi,2025-06-15T11:00:00Z,3000"""
 
-    let result = pipeline.process_csv(csv).await.unwrap();
-    let csv_output = pipeline.export_csv(&result.into()).unwrap();
-    println!("{}", csv_output);
-}
+result = enricher.process_csv(
+    csv_content=csv,
+    location_column='location',
+    timestamp_column='timestamp'
+)
+
+csv_output = enricher.export_csv(result)
+print(csv_output)
 ```
 
 ### Example 2: JSON Processing with Nested Reconstruction
 
-```rust
-use pyweatherenriched::{UnifiedEnrichmentPipeline, EnrichmentConfig};
+```python
+from pyweatherenriched import enricher
 
-#[tokio::main]
-async fn main() {
-    let config = EnrichmentConfig::new(
-        "your_api_key".to_string(),
-        vec!["location".to_string()],
-        "timestamp".to_string(),
-    );
+json_data = """[{
+    "order_id": "ORD-1",
+    "delivery": {
+        "location": "Mumbai",
+        "timestamp": "2025-06-15T10:00:00Z"
+    }
+}]"""
 
-    let pipeline = UnifiedEnrichmentPipeline::new(config).unwrap();
+result = enricher.process_json(
+    json_content=json_data,
+    preserve_nesting=True
+)
 
-    let json = r#"[{
-        "order_id": "ORD-001",
-        "delivery": {
-            "location": "Mumbai",
-            "timestamp": "2025-06-15T10:00:00Z"
-        }
-    }]"#;
-
-    let result = pipeline.process_json_nested(json).await.unwrap();
-    let json_output = pipeline.export_json_nested(&result).unwrap();
-    println!("{}", json_output);
-}
+json_output = enricher.export_json_nested(result)
+print(json_output)
 ```
 
 ### Example 3: Multi-Column Address Geocoding
 
-```rust
-use pyweatherenriched::{GeocodingService, EnrichmentConfig, Enricher};
+```python
+from pyweatherenriched import geocoder
 
-#[tokio::main]
-async fn main() {
-    let geocoder = GeocodingService::new();
+# Multi-column address (no API call needed!)
+row = [
+    ("street", "123 Main Street"),
+    ("city", "Mumbai"),
+    ("state", "Maharashtra"),
+    ("pincode", "400001"),
+]
 
-    // From row data
-    let row = vec![
-        ("street".to_string(), "123 Main Street".to_string()),
-        ("city".to_string(), "Mumbai".to_string()),
-        ("state".to_string(), "Maharashtra".to_string()),
-        ("pincode".to_string(), "400001".to_string()),
-    ];
-
-    let location = geocoder.compose_from_row(&row, &[]).unwrap();
-    println!("Latitude: {}, Longitude: {}", location.latitude, location.longitude);
-}
+location = geocoder.compose_from_row(row, [])
+print(f"Latitude: {location.latitude}, Longitude: {location.longitude}")
 ```
 
 ### Example 4: Batch Processing Large Datasets
 
-```rust
-use pyweatherenriched::{BatchProcessor, EnrichmentConfig};
+```python
+from pyweatherenriched import batch_processor
 
-#[tokio::main]
-async fn main() {
-    let config = EnrichmentConfig::new(
-        "your_api_key".to_string(),
-        vec!["location".to_string()],
-        "timestamp".to_string(),
-    );
+# Process 1M+ rows with parallel chunking (no API key needed!)
+result = batch_processor.process_csv_batches(
+    csv_content=csv_data,  # CSV string
+    location_column='location',
+    timestamp_column='timestamp'
+)
 
-    let processor = BatchProcessor::new(config).unwrap();
+print(f"Processed: {result.stats.total_rows} rows")
+print(f"Successful: {result.stats.successful_enrichments}")
+print(f"Failed: {result.stats.failed_enrichments}")
 
-    let csv = "location,timestamp,sales\n..."; // 1M+ rows
-
-    let result = processor.process_csv_batches(csv).await.unwrap();
-    
-    println!("Processed: {} rows", result.stats.total_rows);
-    println!("Successful: {}", result.stats.successful_enrichments);
-    println!("Failed: {}", result.stats.failed_enrichments);
-    
-    let csv_output = processor.export_csv(&result).unwrap();
-}
+csv_output = batch_processor.export_csv(result)
 ```
 
 ## Automatic Format Detection
 
-The `DataFormatDetector` automatically identifies input format:
+The library automatically identifies input format:
 
-```rust
-use pyweatherenriched::{DataFormatDetector};
+```python
+from pyweatherenriched import enricher
 
-let content = "..."; // CSV or JSON
-
-let rows = DataFormatDetector::detect_and_parse(content).unwrap();
+# CSV or JSON - library auto-detects!
+result = enricher.process(content)  # No format specification needed
 ```
 
 Detection logic:

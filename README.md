@@ -126,6 +126,8 @@ pip install pyweatherenriched
 
 Requires: Python 3.10+
 
+**⚡ ZERO Configuration Needed** - Works out of the box with no API keys!
+
 ---
 
 ## Quick Start
@@ -139,12 +141,11 @@ import pandas as pd
 # Load your data
 df = pd.read_csv('orders.csv')
 
-# Enrich with weather
+# Enrich with weather (no API key needed!)
 result = enricher.enrich_csv(
     csv_content=df.to_csv(index=False),
     location_column='delivery_city',
-    timestamp_column='order_time',
-    api_key='your_openweather_key'
+    timestamp_column='order_time'
 )
 
 # Export
@@ -162,8 +163,7 @@ data = """street,city,state,pincode,timestamp
 result = enricher.process_csv(
     csv_content=data,
     address_columns=['street', 'city', 'state', 'pincode'],
-    timestamp_column='timestamp',
-    api_key='your_key'
+    timestamp_column='timestamp'
 )
 ```
 
@@ -186,8 +186,7 @@ json_data = """[{
 
 result = enricher.process_json(
     json_content=json_data,
-    preserve_nesting=True,  # Reconstructs original structure
-    api_key='your_key'
+    preserve_nesting=True  # Reconstructs original structure
 )
 
 # Export with original nesting preserved
@@ -202,8 +201,7 @@ result = enricher.batch_process_csv(
     csv_file='large_dataset.csv',
     location_column='location',
     timestamp_column='timestamp',
-    chunk_size=1000,  # Parallel chunks
-    api_key='your_key'
+    chunk_size=1000  # Parallel chunks
 )
 
 print(f"Processed: {result.stats.total_rows}")
@@ -266,21 +264,18 @@ result = enricher.enrich_csv(
     csv_content: str,           # CSV as string
     location_column: str,       # Column name with location
     timestamp_column: str,      # Column name with timestamp
-    api_key: str,              # OpenWeather API key
-    external_location_map: Optional[Dict] = None  # Custom location mapping
+    external_location_map: Optional[Dict] = None  # Custom location mapping (optional)
 )
 
 # JSON enrichment (auto-detects format)
 result = enricher.process_json(
     json_content: str,
-    preserve_nesting: bool = False,  # Preserve nested structure
-    api_key: str
+    preserve_nesting: bool = False  # Preserve nested structure
 )
 
 # Auto-detect format (CSV or JSON)
 result = enricher.process(
     content: str,
-    api_key: str,
     preserve_nested: bool = False
 )
 ```
@@ -296,7 +291,7 @@ parse_result = geocoder.parse_address(
 )
 # Returns: AddressParseResult with:
 #   - street_address, building, area, city, state, pincode
-#   - coordinates (lat, lng)
+#   - coordinates (lat, lng) - no API call needed!
 #   - precision_level (Building=95, Street=85, Area=75, City=60, ...)
 
 # Geocode multi-column address
@@ -304,7 +299,7 @@ location = geocoder.compose_from_row(
     row: List[Tuple[str, str]],      # [("street", "123 Main"), ("city", "Mumbai"), ...]
     address_columns: List[str]        # Column names to search
 )
-# Returns: Location with latitude, longitude, city, pincode
+# Returns: Location with latitude, longitude, city, pincode (cached)
 
 # Direct multi-component geocoding
 location = geocoder.geocode_components(
@@ -325,16 +320,14 @@ result = batch_processor.process_csv_batches(
     csv_content: str,
     location_column: str,
     timestamp_column: str,
-    chunk_size: int = 1000,           # Rows per parallel chunk
-    api_key: str
+    chunk_size: int = 1000            # Rows per parallel chunk
 )
 
 # Process large JSON files with nesting
 result = batch_processor.process_json_batches_nested(
     json_content: str,
     location_column: str,
-    timestamp_column: str,
-    api_key: str
+    timestamp_column: str
 )
 
 # Access statistics
@@ -363,15 +356,15 @@ jsonl_output = batch_processor.export_jsonl(result)
 
 ```python
 config = {
-    "api_key": "your_openweather_api_key",    # Required
+    # No API key needed - works out of the box!
     "location_columns": ["delivery_city"],    # Primary location columns
-    "timestamp_column": "order_time",          # Timestamp column name
-    "cache_ttl_hours": 24,                     # Cache validity (reduces API cost 70%)
-    "parallel_threads": None,                  # Auto-detect CPU count
-    "chunk_size": 1000,                        # Rows per parallel chunk
-    "preserve_nested": True,                   # Keep original JSON nesting
+    "timestamp_column": "order_time",         # Timestamp column name
+    "cache_ttl_hours": 24,                    # Cache validity (reduces cost)
+    "parallel_threads": None,                 # Auto-detect CPU count
+    "chunk_size": 1000,                       # Rows per parallel chunk
+    "preserve_nested": True,                  # Keep original JSON nesting
     "address_columns": ["street", "city"],    # For multi-column addresses
-    "precision_threshold": 60,                 # Min precision score (0-95)
+    "precision_threshold": 60,                # Min precision score (0-95)
 }
 ```
 
