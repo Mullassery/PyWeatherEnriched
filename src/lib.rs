@@ -17,7 +17,7 @@ fn pyweatherenriched(_py: Python, m: &pyo3::Bound<pyo3::types::PyModule>) -> PyR
     m.add_class::<PyEnrichedRow>()?;
     m.add_class::<PyEnhancedCache>()?;
     m.add_class::<PyCacheStats>()?;
-    m.add("__version__", "0.2.0")?;
+    m.add("__version__", "0.3.0")?;
     Ok(())
 }
 
