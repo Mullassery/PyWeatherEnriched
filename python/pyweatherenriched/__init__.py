@@ -1,0 +1,8 @@
+"""PyWeatherEnriched - Weather data enrichment for business intelligence"""
+
+__version__ = "2.0.1"
+
+# MCP 2.0 Support (v1.0+)
+from pyweatherenriched._mcp_connector import WeatherEnricher
+
+__all__ = ["WeatherEnricher", "__version__"]

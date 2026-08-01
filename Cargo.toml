@@ -24,6 +24,18 @@ uuid = { version = "1.6", features = ["v4", "serde"] }
 lru = "0.12"
 async-trait = "0.1"
 rusqlite = { version = "0.31", features = ["bundled", "chrono"] }
+clap = { version = "4.4", features = ["derive"] }
+dialoguer = "0.11"
+toml = "0.8"
+indicatif = "0.17"
+
+[[bin]]
+name = "pyweatherenriched-setup"
+path = "src/bin/setup.rs"
+
+[[bin]]
+name = "pyweatherenriched-validate"
+path = "src/bin/validate.rs"
 
 [profile.release]
 opt-level = 3

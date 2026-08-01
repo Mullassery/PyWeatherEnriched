@@ -1,0 +1,24 @@
+[mcp]
+enabled = true
+port = 8769
+discovery_method = "stdio"
+
+[mcp.tools]
+get_enrichment_status = true
+query_enriched_data = true
+get_weather_events = true
+detect_weather_anomalies = true
+correlate_business_metric = true
+forecast_weather_impact = true
+export_enriched_data = true
+validate_enrichment_quality = true
+list_available_enrichments = true
+get_hyperlocal_weather = true
+
+[mcp.security]
+require_auth = false
+allowed_models = []
+
+[mcp.performance]
+cache_results = true
+cache_ttl_seconds = 3600

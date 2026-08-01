@@ -5,11 +5,13 @@ mod geocoder;
 mod cache;
 mod types;
 mod enhanced_cache;
+mod python_bindings;
 
 pub use enricher::WeatherEnricher;
 pub use geocoder::Geocoder;
 pub use cache::Cache;
 pub use enhanced_cache::{EnhancedCache, LocationProximity, DateRange, CacheStats};
+pub use python_bindings::EnrichmentBuilder;
 
 #[pymodule]
 fn pyweatherenriched(_py: Python, m: &pyo3::Bound<pyo3::types::PyModule>) -> PyResult<()> {
@@ -17,6 +19,7 @@ fn pyweatherenriched(_py: Python, m: &pyo3::Bound<pyo3::types::PyModule>) -> PyR
     m.add_class::<PyEnrichedRow>()?;
     m.add_class::<PyEnhancedCache>()?;
     m.add_class::<PyCacheStats>()?;
+    m.add_class::<EnrichmentBuilder>()?;
     m.add("__version__", "0.3.0")?;
     Ok(())
 }
