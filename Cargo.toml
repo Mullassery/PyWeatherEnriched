@@ -1,0 +1,31 @@
+[package]
+name = "pyweatherenriched"
+version = "0.2.0"
+edition = "2021"
+authors = ["Georgi Mammen Mullassery <mullassery@gmail.com>"]
+license = "Proprietary"
+description = "Hyperlocal weather enrichment engine for operational data"
+repository = "https://github.com/Mullassery/PyWeatherEnriched"
+
+[lib]
+name = "pyweatherenriched"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.23", features = ["extension-module", "abi3-py310"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.35", features = ["full"] }
+reqwest = { version = "0.11", features = ["json"] }
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "1.0"
+anyhow = "1.0"
+uuid = { version = "1.6", features = ["v4", "serde"] }
+lru = "0.12"
+async-trait = "0.1"
+rusqlite = { version = "0.31", features = ["bundled", "chrono"] }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
