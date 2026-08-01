@@ -12,6 +12,7 @@
 pub mod config;
 pub mod elevation;
 pub mod urban_heat_island;
+pub mod reverse_geocoding;
 pub mod optional;
 pub mod data_source;
 
