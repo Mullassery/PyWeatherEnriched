@@ -175,7 +175,7 @@ Solar/wind prediction from 1,500 assets
 ## MCP 2.0 Integration
 
 Part of unified **MCP 2.0 Mega-Platform** (207 tools across 18 projects):
-- Discoverable by Claude via MCP protocol on port 8769
+- Discoverable via MCP protocol protocol on port 8769
 - Multi-project workflows with intelligent optimization
 - Cross-database joins with cost-optimized routing
 
