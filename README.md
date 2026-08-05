@@ -1,18 +1,48 @@
-# PyWeatherEnriched v0.3.0
+# PyWeatherEnriched
 
-**Hyperlocal Weather Enrichment Engine with Intelligent Multi-Tier Caching**
+**Add weather to your data. 90-95% fewer API calls. One function.**
 
-## Overview
+Enrich operational datasets with hyperlocal weather in real-time or batch. Intelligent caching cuts API costs 90-95%. Built for forecasting, agriculture, energy, healthcare, logistics, and IoT.
 
-PyWeatherEnriched is a high-performance Rust+Python weather enrichment system with intelligent caching for large-scale batch processing. Process millions of records with 90-98% fewer API calls through temporal range caching, geospatial clustering, and batch deduplication.
+[![PyPI](https://img.shields.io/pypi/v/pyweatherenriched)](https://pypi.org/project/pyweatherenriched)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org)
+[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-blue.svg)](./LICENSE)
 
-**Perfect for:**
-- Climate research & historical analysis
-- Agricultural optimization & soil monitoring
-- Healthcare epidemiology & disease correlation
-- Energy grid load forecasting
-- Environmental monitoring networks
-- Renewable energy prediction
+---
+
+## 30-Second Start
+
+```python
+from pyweatherenriched import WeatherEnricher
+
+enricher = WeatherEnricher(cache_enabled=True)
+
+# Add weather to any data
+result = enricher.enrich_row(
+    location="New York",
+    timestamp="2024-07-21T12:00:00Z"
+)
+
+print(f"Temperature: {result.temperature}°C")
+print(f"Humidity: {result.humidity}%")
+print(f"Condition: {result.condition}")
+```
+
+---
+
+## Why PyWeatherEnriched?
+
+**The Problem:**
+- Weather APIs are expensive (per-request billing)
+- Processing 1M rows burns budget fast
+- Temporal/spatial patterns ignored (redundant API calls)
+- No way to cache across time ranges
+
+**The Solution:**
+- Intelligent caching (90-95% API reduction)
+- Temporal range caching (query whole date ranges at once)
+- Geospatial clustering (reuse nearby location data)
+- Batch deduplication (identify unique requests upfront)
 
 ## Key Features
 
