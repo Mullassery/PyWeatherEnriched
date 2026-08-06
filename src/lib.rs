@@ -6,12 +6,20 @@ mod cache;
 mod types;
 mod enhanced_cache;
 mod python_bindings;
+mod parallel;
+mod batch_resolver;
+mod streaming_io;
+mod database;
 
 pub use enricher::WeatherEnricher;
 pub use geocoder::Geocoder;
 pub use cache::Cache;
 pub use enhanced_cache::{EnhancedCache, LocationProximity, DateRange, CacheStats};
 pub use python_bindings::EnrichmentBuilder;
+pub use parallel::ParallelEnricher;
+pub use batch_resolver::{BatchResolver, BatchResolutionResult, DeduplicationStats};
+pub use streaming_io::{StreamingReader, StreamingWriter, DataRow};
+pub use database::{DatabaseConfig, DatabaseType, DatabaseWriter, DatabasePool, EnrichedRecord};
 
 #[pymodule]
 fn pyweatherenriched(_py: Python, m: &pyo3::Bound<pyo3::types::PyModule>) -> PyResult<()> {
@@ -20,6 +28,9 @@ fn pyweatherenriched(_py: Python, m: &pyo3::Bound<pyo3::types::PyModule>) -> PyR
     m.add_class::<PyEnhancedCache>()?;
     m.add_class::<PyCacheStats>()?;
     m.add_class::<EnrichmentBuilder>()?;
+    m.add_class::<python_bindings::PyBatchResolver>()?;
+    m.add_class::<python_bindings::PyStreamingReader>()?;
+    m.add_class::<python_bindings::PyStreamingWriter>()?;
     m.add("__version__", "0.3.0")?;
     Ok(())
 }
