@@ -31,7 +31,7 @@ fn pyweatherenriched(_py: Python, m: &pyo3::Bound<pyo3::types::PyModule>) -> PyR
     m.add_class::<python_bindings::PyBatchResolver>()?;
     m.add_class::<python_bindings::PyStreamingReader>()?;
     m.add_class::<python_bindings::PyStreamingWriter>()?;
-    m.add("__version__", "0.3.0")?;
+    m.add("__version__", "0.4.0")?;
     Ok(())
 }
 
