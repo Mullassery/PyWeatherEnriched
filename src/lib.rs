@@ -10,6 +10,15 @@ mod parallel;
 mod batch_resolver;
 mod streaming_io;
 mod database;
+// Phase 3: Real-time streaming
+mod error_recovery;
+mod audit_logging;
+mod aqi_fetcher;
+mod forecast;
+mod disaster_alerts;
+mod streaming_kafka;
+mod streaming_mqtt;
+mod http_server;
 
 pub use enricher::WeatherEnricher;
 pub use geocoder::Geocoder;
@@ -20,6 +29,14 @@ pub use parallel::ParallelEnricher;
 pub use batch_resolver::{BatchResolver, BatchResolutionResult, DeduplicationStats};
 pub use streaming_io::{StreamingReader, StreamingWriter, DataRow};
 pub use database::{DatabaseConfig, DatabaseType, DatabaseWriter, DatabasePool, EnrichedRecord};
+pub use error_recovery::{BackoffStrategy, CircuitBreaker, CircuitState, DeadLetterQueue, FailedMessage};
+pub use audit_logging::{AuditLogger, AuditEvent, AuditEventType, AuditStatus};
+pub use aqi_fetcher::{AQIFetcher, AirQualityData, interpret_aqi_level};
+pub use forecast::{ForecastFetcher, ForecastData};
+pub use disaster_alerts::{DisasterMonitor, DisasterAlert, DisasterType, AlertSeverity, assess_disaster_risk};
+pub use streaming_kafka::{KafkaConfig, StreamingMessage, EnrichedStreamingMessage, KafkaConsumerConfig, KafkaProducerConfig, StreamingMetrics};
+pub use streaming_mqtt::{MqttConfig, MqttMessage, IotSensorData, EnrichedIotData, MqttSubscriber, MqttPublisher, QosLevel};
+pub use http_server::{HttpServerConfig, EnrichmentRequest, EnrichmentResponse, RateLimiter, HttpMetrics};
 
 #[pymodule]
 fn pyweatherenriched(_py: Python, m: &pyo3::Bound<pyo3::types::PyModule>) -> PyResult<()> {
@@ -31,7 +48,7 @@ fn pyweatherenriched(_py: Python, m: &pyo3::Bound<pyo3::types::PyModule>) -> PyR
     m.add_class::<python_bindings::PyBatchResolver>()?;
     m.add_class::<python_bindings::PyStreamingReader>()?;
     m.add_class::<python_bindings::PyStreamingWriter>()?;
-    m.add("__version__", "0.4.0")?;
+    m.add("__version__", "0.5.0")?;
     Ok(())
 }
 
