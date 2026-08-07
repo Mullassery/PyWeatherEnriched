@@ -1,6 +1,6 @@
 [package]
 name = "pyweatherenriched"
-version = "0.3.0"
+version = "0.5.0"
 edition = "2021"
 authors = ["Georgi Mammen Mullassery <mullassery@gmail.com>"]
 license = "Proprietary"
@@ -16,7 +16,10 @@ pyo3 = { version = "0.23", features = ["extension-module", "abi3-py310"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1.35", features = ["full"] }
-reqwest = { version = "0.11", features = ["json"] }
+reqwest = { version = "0.11", features = ["json", "blocking"] }
+redis = "0.25"
+tiff = "0.9"
+geojson = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 thiserror = "1.0"
 anyhow = "1.0"
@@ -36,6 +39,10 @@ path = "src/bin/setup.rs"
 [[bin]]
 name = "pyweatherenriched-validate"
 path = "src/bin/validate.rs"
+
+[dev-dependencies]
+mockito = "1.5"
+tempfile = "3"
 
 [profile.release]
 opt-level = 3

@@ -126,12 +126,68 @@ impl UHIService {
         Ok((building_density, avg_height))
     }
 
-    /// Estimate polygon area (simplified)
-    fn estimate_polygon_area(&self, geom: &Value) -> f32 {
-        // Simplified: assume buildings are roughly 30-100 m² on average
-        // Real implementation would use proper polygon area calculation
-        // (Shoelace formula for lat/lon polygons)
-        50.0 // m²
+    /// Real polygon area in square meters via the Shoelace formula, with an
+    /// equirectangular projection (centered on the polygon's own latitude)
+    /// to convert degree-based coordinates to meters — accurate for
+    /// building-footprint scales (tens to low-thousands of m²), where
+    /// projection distortion over such a small extent is negligible.
+    /// Falls back to 0.0 (not a fabricated guess) when geometry is missing
+    /// or malformed.
+    fn estimate_polygon_area(&self, geom: &serde_json::Map<String, Value>) -> f32 {
+        let geometry_type = geom.get("type").and_then(|t| t.as_str()).unwrap_or("");
+        let coordinates = match geom.get("coordinates") {
+            Some(c) => c,
+            None => return 0.0,
+        };
+
+        // Only Polygon and the first polygon of a MultiPolygon are counted;
+        // buildings are overwhelmingly simple Polygons in OSM exports.
+        let outer_ring = match geometry_type {
+            "Polygon" => coordinates.as_array().and_then(|rings| rings.first()),
+            "MultiPolygon" => coordinates
+                .as_array()
+                .and_then(|polys| polys.first())
+                .and_then(|poly| poly.as_array())
+                .and_then(|rings| rings.first()),
+            _ => return 0.0,
+        };
+
+        let Some(ring) = outer_ring.and_then(|r| r.as_array()) else {
+            return 0.0;
+        };
+
+        let points: Vec<(f64, f64)> = ring
+            .iter()
+            .filter_map(|pt| {
+                let arr = pt.as_array()?;
+                let lon = arr.first()?.as_f64()?;
+                let lat = arr.get(1)?.as_f64()?;
+                Some((lon, lat))
+            })
+            .collect();
+
+        if points.len() < 3 {
+            return 0.0;
+        }
+
+        const EARTH_RADIUS_M: f64 = 6_371_000.0;
+        let mean_lat_rad = points.iter().map(|(_, lat)| lat).sum::<f64>() / points.len() as f64;
+        let meters_per_deg_lat = EARTH_RADIUS_M * std::f64::consts::PI / 180.0;
+        let meters_per_deg_lon = meters_per_deg_lat * mean_lat_rad.to_radians().cos();
+
+        let projected: Vec<(f64, f64)> = points
+            .iter()
+            .map(|(lon, lat)| (lon * meters_per_deg_lon, lat * meters_per_deg_lat))
+            .collect();
+
+        // Shoelace formula.
+        let mut sum = 0.0;
+        for i in 0..projected.len() {
+            let (x1, y1) = projected[i];
+            let (x2, y2) = projected[(i + 1) % projected.len()];
+            sum += x1 * y2 - x2 * y1;
+        }
+        (sum.abs() / 2.0) as f32
     }
 
     /// Calculate UHI effect in °C
@@ -202,5 +258,72 @@ mod tests {
         assert_eq!(service.classify_location(0.05), "rural");
         assert_eq!(service.classify_location(0.2), "suburban");
         assert_eq!(service.classify_location(0.5), "dense_urban");
+    }
+
+    fn uhi_service() -> UHIService {
+        UHIService {
+            loader: std::sync::Arc::new(super::super::data_source::LocalFileLoader::new(
+                std::path::PathBuf::from("/tmp"),
+                "test.geojson".to_string(),
+            )),
+            cache: Arc::new(std::sync::Mutex::new(
+                lru::LruCache::new(std::num::NonZeroUsize::new(1).unwrap()),
+            )),
+        }
+    }
+
+    #[test]
+    fn test_estimate_polygon_area_computes_real_shoelace_area_not_hardcoded_50() {
+        let service = uhi_service();
+
+        // A ~0.001deg square near the equator (longitude scale distortion
+        // is negligible there), real area via Shoelace + equirectangular
+        // projection should land near 111m x 111m =~ 12,300 m^2 -- nothing
+        // at all like the old hardcoded 50.0 regardless of geometry.
+        let geom: serde_json::Map<String, Value> = serde_json::from_str(
+            r#"{
+                "type": "Polygon",
+                "coordinates": [[[0.0, 0.0], [0.001, 0.0], [0.001, 0.001], [0.0, 0.001], [0.0, 0.0]]]
+            }"#,
+        )
+        .unwrap();
+
+        let area = service.estimate_polygon_area(&geom);
+
+        assert!(
+            (10_000.0..15_000.0).contains(&area),
+            "expected a real geometric area near ~12,300 m^2, got {area}"
+        );
+    }
+
+    #[test]
+    fn test_estimate_polygon_area_scales_with_actual_size() {
+        let service = uhi_service();
+
+        let small: serde_json::Map<String, Value> = serde_json::from_str(
+            r#"{"type": "Polygon", "coordinates": [[[0.0, 0.0], [0.0005, 0.0], [0.0005, 0.0005], [0.0, 0.0005], [0.0, 0.0]]]}"#,
+        )
+        .unwrap();
+        let large: serde_json::Map<String, Value> = serde_json::from_str(
+            r#"{"type": "Polygon", "coordinates": [[[0.0, 0.0], [0.002, 0.0], [0.002, 0.002], [0.0, 0.002], [0.0, 0.0]]]}"#,
+        )
+        .unwrap();
+
+        let small_area = service.estimate_polygon_area(&small);
+        let large_area = service.estimate_polygon_area(&large);
+
+        // A polygon with 4x the side length should have ~16x the area —
+        // real geometric scaling, unlike the old constant-50.0 stub where
+        // every shape "had" the same area.
+        assert!(large_area > small_area * 10.0);
+    }
+
+    #[test]
+    fn test_estimate_polygon_area_malformed_geometry_returns_zero_not_a_guess() {
+        let service = uhi_service();
+        let geom: serde_json::Map<String, Value> =
+            serde_json::from_str(r#"{"type": "Polygon", "coordinates": [[]]}"#).unwrap();
+
+        assert_eq!(service.estimate_polygon_area(&geom), 0.0);
     }
 }

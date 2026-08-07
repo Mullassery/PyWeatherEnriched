@@ -244,35 +244,37 @@ impl GeospatialConfig {
     }
 }
 
-/// Example config file (geospatial.toml)
-///
-/// [elevation]
-/// source = "local_file"
-/// base_path = "/data/geospatial"
-/// file_pattern = "srtm/{lat}_{lon}_COG.tif"
-/// cache_ttl_seconds = 2592000
-/// timeout_seconds = 10
-///
-/// [urban_heat_island]
-/// source = "redis"
-/// url = "redis://localhost:6379"
-/// key_prefix = "geo:uhi:"
-/// cache_ttl_seconds = 2592000
-/// timeout_seconds = 5
-///
-/// [vegetation]
-/// source = "s3"
-/// bucket = "my-geospatial-data"
-/// region = "us-west-2"
-/// prefix = "sentinel/"
-/// file_pattern = "ndvi/{year}_{month:02d}.tif"
-/// cache_ttl_seconds = 2592000
-/// timeout_seconds = 15
-///
-/// [soil]
-/// # Not configured - optional layer disabled
-/// enabled = false
-///
-/// [flood_risk]
-/// # Not configured - optional layer disabled
-/// enabled = false
+/* Example config file (geospatial.toml)
+ *
+ *
+ * [elevation]
+ * source = "local_file"
+ * base_path = "/data/geospatial"
+ * file_pattern = "srtm/{lat}_{lon}_COG.tif"
+ * cache_ttl_seconds = 2592000
+ * timeout_seconds = 10
+ *
+ * [urban_heat_island]
+ * source = "redis"
+ * url = "redis://localhost:6379"
+ * key_prefix = "geo:uhi:"
+ * cache_ttl_seconds = 2592000
+ * timeout_seconds = 5
+ *
+ * [vegetation]
+ * source = "s3"
+ * bucket = "my-geospatial-data"
+ * region = "us-west-2"
+ * prefix = "sentinel/"
+ * file_pattern = "ndvi/{year}_{month:02d}.tif"
+ * cache_ttl_seconds = 2592000
+ * timeout_seconds = 15
+ *
+ * [soil]
+ * # Not configured - optional layer disabled
+ * enabled = false
+ *
+ * [flood_risk]
+ * # Not configured - optional layer disabled
+ * enabled = false
+ */

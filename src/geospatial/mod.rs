@@ -87,8 +87,8 @@ pub struct GeospatialEnricher {
 
 impl GeospatialEnricher {
     pub fn new(config: GeospatialConfig) -> Result<Self> {
-        let elevation_service = elevation::ElevationService::new(&config)?;
-        let uhi_service = urban_heat_island::UHIService::new(&config)?;
+        let elevation_service = elevation::ElevationService::new(&config.elevation)?;
+        let uhi_service = urban_heat_island::UHIService::new(&config.urban_heat_island)?;
         let optional_services = optional::OptionalServices::new(&config)?;
 
         Ok(GeospatialEnricher {
