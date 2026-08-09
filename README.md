@@ -6,6 +6,7 @@ Enrich operational datasets with hyperlocal weather in real-time or batch. Intel
 
 [![PyPI](https://img.shields.io/pypi/v/pyweatherenriched)](https://pypi.org/project/pyweatherenriched)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org)
+[![Tests](https://github.com/Mullassery/PyWeatherEnriched/actions/workflows/tests.yml/badge.svg)](https://github.com/Mullassery/PyWeatherEnriched/actions/workflows/tests.yml)
 [![License: Proprietary](https://img.shields.io/badge/License-Proprietary-blue.svg)](./LICENSE)
 
 ---
