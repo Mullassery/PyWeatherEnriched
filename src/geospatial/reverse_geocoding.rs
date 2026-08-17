@@ -1,22 +1,21 @@
-/// Reverse Geocoding Module - Latitude/Longitude to Postal Code + Address
-///
-/// CRITICAL: OpenStreetMap-based reverse geocoding (always available)
-/// OPTIONAL: Google Maps, USPS database (framework stubs)
-///
-/// Features:
-/// - Postal code lookup from coordinates
-/// - Full address extraction (street, city, state, country)
-/// - Administrative boundary information
-/// - Configurable output detail levels
-/// - Multiple data source support with auto-detection
-/// - LRU caching for performance
-/// - Batch processing support
+//! Reverse Geocoding Module - Latitude/Longitude to Postal Code + Address
+//!
+//! OpenStreetMap-based reverse geocoding, plus deliberately-unimplemented
+//! framework stubs for Google Maps / USPS (see `optional.rs`).
+//!
+//! Features:
+//! - Postal code lookup from coordinates
+//! - Full address extraction (street, city, state, country)
+//! - Administrative boundary information
+//! - Configurable output detail levels
+//! - Multiple data source support with auto-detection
+//! - LRU caching for performance
+//! - Batch processing support
 
 use crate::geospatial::config::DataSourceConfig;
 use crate::geospatial::data_source::{create_loader, GeoDataLoader};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::sync::Arc;
 
 /// Output detail level - user chooses what information to return
@@ -48,7 +47,7 @@ pub struct ReverseGeocodeResult {
     pub latitude: f64,
     pub longitude: f64,
     pub confidence: f32, // 0.0-1.0
-    pub source: String, // "osm", "google", "usps"
+    pub source: String,  // "osm", "google", "usps"
 }
 
 /// Complete response with alternatives and metadata
@@ -117,7 +116,12 @@ fn feature_centroid(feature: &geojson::Feature) -> Option<(f64, f64)> {
     }
 }
 
-fn collect_points(value: &geojson::Value, sum_lon: &mut f64, sum_lat: &mut f64, count: &mut usize) {
+fn collect_points(
+    value: &geojson::GeometryValue,
+    sum_lon: &mut f64,
+    sum_lat: &mut f64,
+    count: &mut usize,
+) {
     use geojson::GeometryValue::*;
     match value {
         Point { coordinates: p } => {
@@ -127,7 +131,12 @@ fn collect_points(value: &geojson::Value, sum_lon: &mut f64, sum_lat: &mut f64, 
                 *count += 1;
             }
         }
-        MultiPoint { coordinates: points } | LineString { coordinates: points } => {
+        MultiPoint {
+            coordinates: points,
+        }
+        | LineString {
+            coordinates: points,
+        } => {
             for p in points {
                 if p.len() >= 2 {
                     *sum_lon += p[0];
@@ -194,9 +203,9 @@ impl ReverseGeocodingService {
     pub fn new(config: &DataSourceConfig, cache_enabled: bool) -> Result<Self> {
         let osm_loader = create_loader(&config.source)?;
 
-        let cache = Arc::new(std::sync::Mutex::new(
-            lru::LruCache::new(std::num::NonZeroUsize::new(5000).unwrap()),
-        ));
+        let cache = Arc::new(std::sync::Mutex::new(lru::LruCache::new(
+            std::num::NonZeroUsize::new(5000).unwrap(),
+        )));
 
         Ok(ReverseGeocodingService {
             osm_loader,
@@ -206,11 +215,7 @@ impl ReverseGeocodingService {
     }
 
     /// Reverse geocode a single location - returns full result
-    pub fn reverse_geocode(
-        &self,
-        latitude: f64,
-        longitude: f64,
-    ) -> Result<ReverseGeocodeResult> {
+    pub fn reverse_geocode(&self, latitude: f64, longitude: f64) -> Result<ReverseGeocodeResult> {
         let cache_key = format!("rgeo_{:.6}_{:.6}", latitude, longitude);
 
         // Check cache
@@ -245,49 +250,45 @@ impl ReverseGeocodingService {
         let full_result = self.reverse_geocode(latitude, longitude)?;
 
         let output = match detail_level {
-            OutputDetailLevel::Minimal => {
-                serde_json::to_string(&MinimalReverseGeocodeResult {
-                    postal_code: full_result.postal_code.clone(),
-                    postal_code_type: full_result.postal_code_type.clone(),
-                    country: full_result.country.clone(),
-                    confidence: full_result.confidence,
-                })?
-            }
-            OutputDetailLevel::Standard => {
-                serde_json::to_string(&StandardReverseGeocodeResult {
-                    postal_code: full_result.postal_code.clone(),
-                    postal_code_type: full_result.postal_code_type.clone(),
-                    street_address: full_result.street_address.clone(),
-                    city: full_result.city.clone(),
-                    state: full_result.state.clone(),
-                    country: full_result.country.clone(),
-                    country_code: full_result.country_code.clone(),
-                    confidence: full_result.confidence,
-                    source: full_result.source.clone(),
-                })?
-            }
-            OutputDetailLevel::Extended => {
-                serde_json::to_string(&ExtendedReverseGeocodeResult {
-                    postal_code: full_result.postal_code.clone(),
-                    postal_code_type: full_result.postal_code_type.clone(),
-                    street_address: full_result.street_address.clone(),
-                    city: full_result.city.clone(),
-                    state: full_result.state.clone(),
-                    country: full_result.country.clone(),
-                    country_code: full_result.country_code.clone(),
-                    admin_level_1: full_result.admin_level_1.clone(),
-                    admin_level_2: full_result.admin_level_2.clone(),
-                    neighborhood: full_result.neighborhood.clone(),
-                    confidence: full_result.confidence,
-                    source: full_result.source.clone(),
-                })?
-            }
-            OutputDetailLevel::Complete => serde_json::to_string(&CompleteReverseGeocodeResponse {
-                primary: full_result,
-                alternatives: Vec::new(), // TODO: Get alternatives from multiple sources
-                sources_tried: vec!["osm".to_string()],
-                processing_time_ms: 0, // TODO: Track timing
+            OutputDetailLevel::Minimal => serde_json::to_string(&MinimalReverseGeocodeResult {
+                postal_code: full_result.postal_code.clone(),
+                postal_code_type: full_result.postal_code_type.clone(),
+                country: full_result.country.clone(),
+                confidence: full_result.confidence,
             })?,
+            OutputDetailLevel::Standard => serde_json::to_string(&StandardReverseGeocodeResult {
+                postal_code: full_result.postal_code.clone(),
+                postal_code_type: full_result.postal_code_type.clone(),
+                street_address: full_result.street_address.clone(),
+                city: full_result.city.clone(),
+                state: full_result.state.clone(),
+                country: full_result.country.clone(),
+                country_code: full_result.country_code.clone(),
+                confidence: full_result.confidence,
+                source: full_result.source.clone(),
+            })?,
+            OutputDetailLevel::Extended => serde_json::to_string(&ExtendedReverseGeocodeResult {
+                postal_code: full_result.postal_code.clone(),
+                postal_code_type: full_result.postal_code_type.clone(),
+                street_address: full_result.street_address.clone(),
+                city: full_result.city.clone(),
+                state: full_result.state.clone(),
+                country: full_result.country.clone(),
+                country_code: full_result.country_code.clone(),
+                admin_level_1: full_result.admin_level_1.clone(),
+                admin_level_2: full_result.admin_level_2.clone(),
+                neighborhood: full_result.neighborhood.clone(),
+                confidence: full_result.confidence,
+                source: full_result.source.clone(),
+            })?,
+            OutputDetailLevel::Complete => {
+                serde_json::to_string(&CompleteReverseGeocodeResponse {
+                    primary: full_result,
+                    alternatives: Vec::new(), // TODO: Get alternatives from multiple sources
+                    sources_tried: vec!["osm".to_string()],
+                    processing_time_ms: 0, // TODO: Track timing
+                })?
+            }
         };
 
         Ok(output)
@@ -326,7 +327,9 @@ impl ReverseGeocodingService {
             .parse::<geojson::GeoJson>()
             .map_err(|e| anyhow::anyhow!("failed to parse OSM GeoJSON for tile {tile_id}: {e}"))?
             .try_into()
-            .map_err(|e| anyhow::anyhow!("tile {tile_id} is not a GeoJSON FeatureCollection: {e}"))?;
+            .map_err(|e| {
+                anyhow::anyhow!("tile {tile_id} is not a GeoJSON FeatureCollection: {e}")
+            })?;
 
         let nearest = collection
             .features
@@ -352,8 +355,8 @@ impl ReverseGeocodingService {
                 .map(str::to_string)
         };
 
-        let postal_code = get(&["addr:postcode", "postal_code", "postcode", "zip"])
-            .ok_or_else(|| {
+        let postal_code =
+            get(&["addr:postcode", "postal_code", "postcode", "zip"]).ok_or_else(|| {
                 anyhow::anyhow!("nearest feature in tile {tile_id} has no postal code field")
             })?;
 
@@ -499,17 +502,21 @@ mod tests {
         assert!(json.contains("\"confidence\":0.95"));
     }
 
-    fn service_with_geojson_fixture(dir: &std::path::Path, geojson_body: &str) -> ReverseGeocodingService {
+    fn service_with_geojson_fixture(
+        dir: &std::path::Path,
+        geojson_body: &str,
+    ) -> ReverseGeocodingService {
         std::fs::write(dir.join("40_-74.geojson"), geojson_body).unwrap();
-        let loader: Arc<dyn GeoDataLoader> = Arc::new(super::super::data_source::LocalFileLoader::new(
-            dir.to_path_buf(),
-            "{lat}_{lon}.geojson".to_string(),
-        ));
+        let loader: Arc<dyn GeoDataLoader> =
+            Arc::new(super::super::data_source::LocalFileLoader::new(
+                dir.to_path_buf(),
+                "{lat}_{lon}.geojson".to_string(),
+            ));
         ReverseGeocodingService {
             osm_loader: loader,
-            cache: Arc::new(std::sync::Mutex::new(
-                lru::LruCache::new(std::num::NonZeroUsize::new(100).unwrap()),
-            )),
+            cache: Arc::new(std::sync::Mutex::new(lru::LruCache::new(
+                std::num::NonZeroUsize::new(100).unwrap(),
+            ))),
             cache_enabled: true,
         }
     }

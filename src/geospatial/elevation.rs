@@ -1,10 +1,10 @@
-/// Elevation module - SRTM DEM processing
-///
-/// Provides:
-/// - Elevation lookup at any coordinate
-/// - Lapse rate temperature adjustment (-0.65°C per 100m)
-/// - Terrain roughness for wind calculations
-/// - Elevation categorization
+//! Elevation module - SRTM DEM processing
+//!
+//! Provides:
+//! - Elevation lookup at any coordinate
+//! - Lapse rate temperature adjustment (-0.65°C per 100m)
+//! - Terrain roughness for wind calculations
+//! - Elevation categorization
 
 use crate::geospatial::config::DataSourceConfig;
 use crate::geospatial::data_source::{create_loader, GeoDataLoader};
@@ -20,9 +20,9 @@ pub struct ElevationService {
 impl ElevationService {
     pub fn new(config: &DataSourceConfig) -> Result<Self> {
         let loader = create_loader(&config.source)?;
-        let cache = Arc::new(std::sync::Mutex::new(
-            lru::LruCache::new(std::num::NonZeroUsize::new(10000).unwrap()),
-        ));
+        let cache = Arc::new(std::sync::Mutex::new(lru::LruCache::new(
+            std::num::NonZeroUsize::new(10000).unwrap(),
+        )));
 
         Ok(ElevationService { loader, cache })
     }
@@ -114,9 +114,9 @@ impl ElevationService {
         let mut decoder = tiff::decoder::Decoder::new(cursor)
             .map_err(|e| anyhow::anyhow!("failed to parse GeoTIFF for tile {tile_id}: {e}"))?;
 
-        let (width, height) = decoder
-            .dimensions()
-            .map_err(|e| anyhow::anyhow!("failed to read GeoTIFF dimensions for tile {tile_id}: {e}"))?;
+        let (width, height) = decoder.dimensions().map_err(|e| {
+            anyhow::anyhow!("failed to read GeoTIFF dimensions for tile {tile_id}: {e}")
+        })?;
 
         let pixel_scale = decoder
             .get_tag_f64_vec(tiff::tags::Tag::ModelPixelScaleTag)
@@ -153,9 +153,9 @@ impl ElevationService {
         }
         let (col, row) = (col as usize, row as usize);
 
-        let image = decoder
-            .read_image()
-            .map_err(|e| anyhow::anyhow!("failed to decode GeoTIFF raster for tile {tile_id}: {e}"))?;
+        let image = decoder.read_image().map_err(|e| {
+            anyhow::anyhow!("failed to decode GeoTIFF raster for tile {tile_id}: {e}")
+        })?;
         let idx = row * (width as usize) + col;
 
         let raw_value: f64 = match image {
@@ -163,24 +163,24 @@ impl ElevationService {
                 .get(idx)
                 .ok_or_else(|| anyhow::anyhow!("pixel index out of range for tile {tile_id}"))?
                 as f64,
-            tiff::decoder::DecodingResult::F32(data) => f64::from(
-                *data
-                    .get(idx)
-                    .ok_or_else(|| anyhow::anyhow!("pixel index out of range for tile {tile_id}"))?,
-            ),
+            tiff::decoder::DecodingResult::F32(data) => {
+                f64::from(*data.get(idx).ok_or_else(|| {
+                    anyhow::anyhow!("pixel index out of range for tile {tile_id}")
+                })?)
+            }
             tiff::decoder::DecodingResult::F64(data) => *data
                 .get(idx)
                 .ok_or_else(|| anyhow::anyhow!("pixel index out of range for tile {tile_id}"))?,
-            tiff::decoder::DecodingResult::U16(data) => f64::from(
-                *data
-                    .get(idx)
-                    .ok_or_else(|| anyhow::anyhow!("pixel index out of range for tile {tile_id}"))?,
-            ),
-            tiff::decoder::DecodingResult::I32(data) => f64::from(
-                *data
-                    .get(idx)
-                    .ok_or_else(|| anyhow::anyhow!("pixel index out of range for tile {tile_id}"))?,
-            ),
+            tiff::decoder::DecodingResult::U16(data) => {
+                f64::from(*data.get(idx).ok_or_else(|| {
+                    anyhow::anyhow!("pixel index out of range for tile {tile_id}")
+                })?)
+            }
+            tiff::decoder::DecodingResult::I32(data) => {
+                f64::from(*data.get(idx).ok_or_else(|| {
+                    anyhow::anyhow!("pixel index out of range for tile {tile_id}")
+                })?)
+            }
             other => {
                 return Err(anyhow::anyhow!(
                     "unsupported GeoTIFF sample format in tile {tile_id}: {other:?}"
@@ -210,7 +210,13 @@ impl ElevationService {
     }
 
     /// Get elevation profile for a region (all tiles)
-    pub fn get_elevation_profile(&self, min_lat: f64, max_lat: f64, min_lon: f64, max_lon: f64) -> Result<Vec<(f64, f64, f32)>> {
+    pub fn get_elevation_profile(
+        &self,
+        min_lat: f64,
+        max_lat: f64,
+        min_lon: f64,
+        max_lon: f64,
+    ) -> Result<Vec<(f64, f64, f32)>> {
         let mut profile = Vec::new();
 
         let lat_min = min_lat.floor() as i32;
@@ -247,9 +253,9 @@ mod tests {
                 std::path::PathBuf::from("/tmp"),
                 "test.tif".to_string(),
             )),
-            cache: Arc::new(std::sync::Mutex::new(
-                lru::LruCache::new(std::num::NonZeroUsize::new(1).unwrap()),
-            )),
+            cache: Arc::new(std::sync::Mutex::new(lru::LruCache::new(
+                std::num::NonZeroUsize::new(1).unwrap(),
+            ))),
         };
 
         // At 1000m elevation
@@ -264,9 +270,9 @@ mod tests {
                 std::path::PathBuf::from("/tmp"),
                 "test.tif".to_string(),
             )),
-            cache: Arc::new(std::sync::Mutex::new(
-                lru::LruCache::new(std::num::NonZeroUsize::new(1).unwrap()),
-            )),
+            cache: Arc::new(std::sync::Mutex::new(lru::LruCache::new(
+                std::num::NonZeroUsize::new(1).unwrap(),
+            ))),
         };
 
         assert_eq!(service.classify_elevation(50.0), "LOWLAND");
@@ -318,9 +324,9 @@ mod tests {
                 dir.to_path_buf(),
                 "{lat}_{lon}.tif".to_string(),
             )),
-            cache: Arc::new(std::sync::Mutex::new(
-                lru::LruCache::new(std::num::NonZeroUsize::new(100).unwrap()),
-            )),
+            cache: Arc::new(std::sync::Mutex::new(lru::LruCache::new(
+                std::num::NonZeroUsize::new(100).unwrap(),
+            ))),
         }
     }
 

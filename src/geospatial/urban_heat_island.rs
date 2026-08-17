@@ -1,24 +1,24 @@
-/// Urban Heat Island (UHI) module - OSM-based modeling
-///
-/// Calculates UHI effect from:
-/// - Building density
-/// - Building heights
-/// - Surface materials
-/// - Vegetation coverage
-///
-/// UHI Effect Formula:
-/// UHI = 0.7 + 0.25 * building_density + 0.1 * avg_building_height
-///
-/// Typical values:
-/// - Urban core: +2.5 to +4.0°C
-/// - Suburban: +1.0 to +2.0°C
-/// - Rural: 0°C baseline
+//! Urban Heat Island (UHI) module - OSM-based modeling
+//!
+//! Calculates UHI effect from:
+//! - Building density
+//! - Building heights
+//! - Surface materials
+//! - Vegetation coverage
+//!
+//! UHI Effect Formula:
+//! UHI = 0.7 + 0.25 * building_density + 0.1 * avg_building_height
+//!
+//! Typical values:
+//! - Urban core: +2.5 to +4.0°C
+//! - Suburban: +1.0 to +2.0°C
+//! - Rural: 0°C baseline
 
 use crate::geospatial::config::DataSourceConfig;
 use crate::geospatial::data_source::{create_loader, GeoDataLoader};
 use crate::geospatial::UHIData;
 use anyhow::Result;
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::sync::Arc;
 
 pub struct UHIService {
@@ -29,9 +29,9 @@ pub struct UHIService {
 impl UHIService {
     pub fn new(config: &DataSourceConfig) -> Result<Self> {
         let loader = create_loader(&config.source)?;
-        let cache = Arc::new(std::sync::Mutex::new(
-            lru::LruCache::new(std::num::NonZeroUsize::new(1000).unwrap()),
-        ));
+        let cache = Arc::new(std::sync::Mutex::new(lru::LruCache::new(
+            std::num::NonZeroUsize::new(1000).unwrap(),
+        )));
 
         Ok(UHIService { loader, cache })
     }
@@ -66,7 +66,8 @@ impl UHIService {
         let geojson: Value = serde_json::from_str(&osm_json)?;
 
         // Extract building features
-        let (building_density, avg_height) = self.analyze_buildings(&geojson, latitude, longitude)?;
+        let (building_density, avg_height) =
+            self.analyze_buildings(&geojson, latitude, longitude)?;
 
         // Calculate UHI effect
         let uhi_effect = self.calculate_uhi_effect(building_density, avg_height);
@@ -81,8 +82,12 @@ impl UHIService {
     }
 
     /// Analyze buildings from OSM GeoJSON
-    fn analyze_buildings(&self, geojson: &Value, latitude: f64, longitude: f64) -> Result<(f32, f32)> {
-        let mut total_area = 0.0f32;
+    fn analyze_buildings(
+        &self,
+        geojson: &Value,
+        _latitude: f64,
+        _longitude: f64,
+    ) -> Result<(f32, f32)> {
         let mut total_building_area = 0.0f32;
         let mut heights = Vec::new();
 
@@ -101,7 +106,9 @@ impl UHIService {
                                 if let Ok(height) = height_str.parse::<f32>() {
                                     heights.push(height);
                                 }
-                            } else if let Some(levels_str) = props.get("building:levels").and_then(|v| v.as_str()) {
+                            } else if let Some(levels_str) =
+                                props.get("building:levels").and_then(|v| v.as_str())
+                            {
                                 if let Ok(levels) = levels_str.parse::<f32>() {
                                     heights.push(levels * 3.5); // Assume 3.5m per level
                                 }
@@ -113,8 +120,7 @@ impl UHIService {
         }
 
         // Calculate search area (1km x 1km = 1,000,000 m²)
-        let search_area = 1_000_000.0f32;
-        total_area = search_area;
+        let total_area = 1_000_000.0f32;
 
         let building_density = (total_building_area / total_area).min(1.0);
         let avg_height = if heights.is_empty() {
@@ -232,9 +238,9 @@ mod tests {
                 std::path::PathBuf::from("/tmp"),
                 "test.geojson".to_string(),
             )),
-            cache: Arc::new(std::sync::Mutex::new(
-                lru::LruCache::new(std::num::NonZeroUsize::new(1).unwrap()),
-            )),
+            cache: Arc::new(std::sync::Mutex::new(lru::LruCache::new(
+                std::num::NonZeroUsize::new(1).unwrap(),
+            ))),
         };
 
         // Dense urban: 85% building density, avg 25m height
@@ -250,9 +256,9 @@ mod tests {
                 std::path::PathBuf::from("/tmp"),
                 "test.geojson".to_string(),
             )),
-            cache: Arc::new(std::sync::Mutex::new(
-                lru::LruCache::new(std::num::NonZeroUsize::new(1).unwrap()),
-            )),
+            cache: Arc::new(std::sync::Mutex::new(lru::LruCache::new(
+                std::num::NonZeroUsize::new(1).unwrap(),
+            ))),
         };
 
         assert_eq!(service.classify_location(0.05), "rural");
@@ -266,9 +272,9 @@ mod tests {
                 std::path::PathBuf::from("/tmp"),
                 "test.geojson".to_string(),
             )),
-            cache: Arc::new(std::sync::Mutex::new(
-                lru::LruCache::new(std::num::NonZeroUsize::new(1).unwrap()),
-            )),
+            cache: Arc::new(std::sync::Mutex::new(lru::LruCache::new(
+                std::num::NonZeroUsize::new(1).unwrap(),
+            ))),
         }
     }
 

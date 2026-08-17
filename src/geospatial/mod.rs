@@ -1,27 +1,31 @@
-/// Geospatial module for weather enrichment
-///
-/// CRITICAL (always available):
-/// - Elevation (SRTM): Temperature lapse rate, wind adjustment
-/// - Urban Heat Island (OSM): Building density, UHI effect
-///
-/// OPTIONAL (framework stubs, load on demand):
-/// - Vegetation (NDVI): Cooling effects, drought detection
-/// - Soil: Water holding capacity, irrigation
-/// - Flood Risk: Hazard modeling, early warning
+//! Geospatial building blocks (elevation, urban heat island, reverse
+//! geocoding, pluggable data sources).
+//!
+//! Status: real, independently unit-tested logic, but **not yet wired into
+//! the public Python API** (`src/lib.rs`'s `#[pymodule]`) and not called
+//! from anywhere else in the crate. Treat this module as internal
+//! groundwork, not a shipped feature, until it has a `#[pyclass]`/
+//! `#[pymethods]` surface and an end-to-end Python test exercising it.
+//!
+//! Layers:
+//! - Elevation (SRTM): temperature lapse rate, wind adjustment
+//! - Urban Heat Island (OSM): building density, UHI effect
+//! - Optional (`optional.rs`, deliberately unimplemented framework stubs):
+//!   vegetation (NDVI), soil, flood risk, Google Maps / USPS reverse
+//!   geocoding
 
 pub mod config;
-pub mod elevation;
-pub mod urban_heat_island;
-pub mod reverse_geocoding;
-pub mod optional;
 pub mod data_source;
+pub mod elevation;
+pub mod optional;
+pub mod reverse_geocoding;
+pub mod urban_heat_island;
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 pub use config::GeospatialConfig;
-pub use data_source::DataSource;
 
 /// Result from geospatial enrichment
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -115,7 +119,11 @@ impl GeospatialEnricher {
 
         // Optional: Only if requested
         let vegetation = if requested_layers.contains(&"vegetation") {
-            Some(self.optional_services.vegetation.get_data(latitude, longitude)?)
+            Some(
+                self.optional_services
+                    .vegetation
+                    .get_data(latitude, longitude)?,
+            )
         } else {
             None
         };
@@ -127,7 +135,11 @@ impl GeospatialEnricher {
         };
 
         let flood_risk = if requested_layers.contains(&"flood_risk") {
-            Some(self.optional_services.flood_risk.get_data(latitude, longitude)?)
+            Some(
+                self.optional_services
+                    .flood_risk
+                    .get_data(latitude, longitude)?,
+            )
         } else {
             None
         };

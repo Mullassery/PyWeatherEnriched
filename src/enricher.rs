@@ -43,7 +43,7 @@ fn condition_from_wmo_code(code: i64) -> &'static str {
         66 | 67 => "Freezing Rain",
         71 | 73 | 75 => "Snow",
         77 => "Snow Grains",
-        80 | 81 | 82 => "Rain Showers",
+        80..=82 => "Rain Showers",
         85 | 86 => "Snow Showers",
         95 => "Thunderstorm",
         96 | 99 => "Thunderstorm with Hail",
@@ -321,7 +321,8 @@ mod tests {
             "2026-01-01T06:00".to_string(),
             "2026-01-01T12:00".to_string(),
         ];
-        let target = NaiveDateTime::parse_from_str("2026-01-01T07:00:00", "%Y-%m-%dT%H:%M:%S").unwrap();
+        let target =
+            NaiveDateTime::parse_from_str("2026-01-01T07:00:00", "%Y-%m-%dT%H:%M:%S").unwrap();
         assert_eq!(nearest_hour_index(&times, &target), Some(1));
     }
 
