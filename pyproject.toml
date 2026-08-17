@@ -12,7 +12,10 @@ license = {text = "Proprietary"}
 authors = [
     {name = "Georgi Mammen Mullassery", email = "mullassery@gmail.com"}
 ]
-dependencies = []
+dependencies = [
+    "pandas>=1.5",
+    "numpy>=1.23",
+]
 keywords = [
     "weather",
     "enrichment",
@@ -23,8 +26,11 @@ keywords = [
     "retail",
     "healthcare",
     "iot",
-    "data-engineering"
+    "data-engineering",
+    "feature-engineering",
+    "machine-learning",
 ]
+
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -42,6 +48,9 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Information Analysis",
 ]
 
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
 [project.urls]
 Homepage = "https://github.com/Mullassery/PyWeatherEnriched"
 "Bug Tracker" = "https://github.com/Mullassery/PyWeatherEnriched/issues"
@@ -50,6 +59,7 @@ Documentation = "https://github.com/Mullassery/PyWeatherEnriched#readme"
 
 [tool.maturin]
 manifest-path = "Cargo.toml"
-module-name = "pyweatherenriched"
-features = ["pyo3/abi3-py310"]
-sdist-include = ["README.md", "DATA_FORMATS_GUIDE.md", "ARCHITECTURE.md", "ENHANCED_CACHE_RELEASE.md", "docs/ENHANCED_CACHE.md", "examples/mcp_enhanced_cache.py", "examples/mcp_enhanced_cache_use_cases.py"]
+python-source = "python"
+module-name = "pyweatherenriched._pyweatherenriched"
+features = ["extension-module"]
+sdist-include = ["README.md"]

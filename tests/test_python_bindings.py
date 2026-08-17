@@ -72,6 +72,55 @@ class TestEnhancedCache:
         assert hits == 1
         assert missing == [1]  # only the Paris request (index 1) needs fetching
 
+    def test_get_range_returns_entries_within_the_window(self, tmp_path):
+        # get_range only queries the SQLite-backed persistent tier.
+        db_path = str(tmp_path / "cache.sqlite3")
+        cache = pwe.EnhancedCache(cache_size=10, db_path=db_path)
+        cache.put("Berlin", 52.52, 13.405, 10.0, 60.0, "Clear", "2024-01-05T00:00:00Z")
+        cache.put("Berlin", 52.52, 13.405, 12.0, 55.0, "Clear", "2024-01-15T00:00:00Z")
+        cache.put("Berlin", 52.52, 13.405, 5.0, 70.0, "Rain", "2024-02-20T00:00:00Z")
+
+        results = cache.get_range(
+            52.52, 13.405, "2024-01-01T00:00:00Z", "2024-01-31T23:59:59Z"
+        )
+
+        assert len(results) == 2
+        assert {r["timestamp"] for r in results} == {
+            "2024-01-05T00:00:00Z",
+            "2024-01-15T00:00:00Z",
+        }
+
+    def test_get_range_without_persistence_returns_empty(self):
+        cache = pwe.EnhancedCache(cache_size=10)  # no db_path -> memory only
+        cache.put("Berlin", 52.52, 13.405, 10.0, 60.0, "Clear", "2024-01-05T00:00:00Z")
+
+        results = cache.get_range(
+            52.52, 13.405, "2024-01-01T00:00:00Z", "2024-01-31T23:59:59Z"
+        )
+        assert results == []
+
+    def test_get_range_rejects_invalid_timestamps(self):
+        cache = pwe.EnhancedCache(cache_size=10)
+        with pytest.raises(ValueError):
+            cache.get_range(52.52, 13.405, "not-a-date", "2024-01-31T23:59:59Z")
+
+
+class TestEnrichedRow:
+    def test_constructs_and_exposes_all_fields(self):
+        row = pwe.EnrichedRow(
+            location="Berlin",
+            latitude=52.52,
+            longitude=13.405,
+            temperature=10.0,
+            humidity=60.0,
+            condition="Clear",
+            timestamp="2024-01-01T00:00:00",
+        )
+        assert row.location == "Berlin"
+        assert row.latitude == 52.52
+        assert row.temperature == 10.0
+        assert "Berlin" in repr(row)
+
 
 class TestCacheStats:
     def test_repr_and_hit_ratio(self):
