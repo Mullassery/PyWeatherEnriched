@@ -1,15 +1,15 @@
-/// Optional geospatial layers - framework stubs
-///
-/// These are NOT implemented by default. Users must opt-in via config.
-/// Structure is provided for easy extension.
-///
-/// REVERSE GEOCODING SOURCES (Optional):
-/// - Google Maps Reverse Geocoding (framework stub)
-/// - USPS Postal Database (framework stub)
-/// - Custom sources (extensible pattern)
+//! Optional geospatial layers - framework stubs
+//!
+//! These are NOT implemented by default. Users must opt-in via config.
+//! Structure is provided for easy extension.
+//!
+//! REVERSE GEOCODING SOURCES (Optional):
+//! - Google Maps Reverse Geocoding (framework stub)
+//! - USPS Postal Database (framework stub)
+//! - Custom sources (extensible pattern)
 
 use crate::geospatial::config::GeospatialConfig;
-use crate::geospatial::{SoilData, VegetationData, FloodRiskData};
+use crate::geospatial::{FloodRiskData, SoilData, VegetationData};
 use anyhow::Result;
 
 /// Vegetation/NDVI layer (optional)
@@ -84,8 +84,14 @@ impl GoogleMapsReverseGeocoder {
         Ok(GoogleMapsReverseGeocoder {})
     }
 
-    pub fn reverse_geocode(&self, _latitude: f64, _longitude: f64) -> Result<super::reverse_geocoding::ReverseGeocodeResult> {
-        Err(anyhow::anyhow!("Google Maps reverse geocoding not yet implemented"))
+    pub fn reverse_geocode(
+        &self,
+        _latitude: f64,
+        _longitude: f64,
+    ) -> Result<super::reverse_geocoding::ReverseGeocodeResult> {
+        Err(anyhow::anyhow!(
+            "Google Maps reverse geocoding not yet implemented"
+        ))
     }
 }
 
@@ -102,7 +108,11 @@ impl USPSPostalDatabase {
         Ok(USPSPostalDatabase {})
     }
 
-    pub fn reverse_geocode(&self, _latitude: f64, _longitude: f64) -> Result<super::reverse_geocoding::ReverseGeocodeResult> {
+    pub fn reverse_geocode(
+        &self,
+        _latitude: f64,
+        _longitude: f64,
+    ) -> Result<super::reverse_geocoding::ReverseGeocodeResult> {
         Err(anyhow::anyhow!("USPS postal database not yet implemented"))
     }
 }
@@ -121,14 +131,11 @@ impl OptionalServices {
         // Load optional services only if configured
         // Otherwise, services will return "not implemented" errors
 
-        let vegetation = VegetationService::new(config)
-            .unwrap_or_else(|_| VegetationService {});
+        let vegetation = VegetationService::new(config).unwrap_or(VegetationService {});
 
-        let soil = SoilService::new(config)
-            .unwrap_or_else(|_| SoilService {});
+        let soil = SoilService::new(config).unwrap_or(SoilService {});
 
-        let flood_risk = FloodRiskService::new(config)
-            .unwrap_or_else(|_| FloodRiskService {});
+        let flood_risk = FloodRiskService::new(config).unwrap_or(FloodRiskService {});
 
         // Optional reverse geocoding sources
         // TODO: Load from config if available

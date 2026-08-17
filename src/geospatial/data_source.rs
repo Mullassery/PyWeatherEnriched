@@ -1,5 +1,5 @@
-/// Abstract data source layer - handles loading from different backends
-/// Local files, Redis, S3, GCS, HTTP, or hybrid
+//! Abstract data source layer - handles loading from different backends
+//! Local files, Redis, S3, GCS, HTTP, or hybrid
 
 use anyhow::Result;
 use std::sync::Arc;
@@ -35,7 +35,7 @@ impl LocalFileLoader {
 
     fn format_path(&self, tile_id: &str) -> std::path::PathBuf {
         let parts: Vec<&str> = tile_id.split('_').collect();
-        let lat = parts.get(0).copied().unwrap_or("0");
+        let lat = parts.first().copied().unwrap_or("0");
         let lon = parts.get(1).copied().unwrap_or("0");
 
         let filename = self
@@ -50,7 +50,8 @@ impl LocalFileLoader {
 impl GeoDataLoader for LocalFileLoader {
     fn get_tile(&self, tile_id: &str) -> Result<Vec<u8>> {
         let path = self.format_path(tile_id);
-        std::fs::read(&path).map_err(|e| anyhow::anyhow!("Failed to load {}: {}", path.display(), e))
+        std::fs::read(&path)
+            .map_err(|e| anyhow::anyhow!("Failed to load {}: {}", path.display(), e))
     }
 
     fn get_vector(&self, tile_id: &str) -> Result<String> {
@@ -134,7 +135,7 @@ impl HttpLoader {
 
     fn format_url(&self, tile_id: &str) -> String {
         let parts: Vec<&str> = tile_id.split('_').collect();
-        let lat = parts.get(0).copied().unwrap_or("0");
+        let lat = parts.first().copied().unwrap_or("0");
         let lon = parts.get(1).copied().unwrap_or("0");
 
         let filename = self
@@ -151,7 +152,7 @@ impl GeoDataLoader for HttpLoader {
         // Try local cache first
         if let Some(cache_path) = &self.local_cache_path {
             let parts: Vec<&str> = tile_id.split('_').collect();
-            let lat = parts.get(0).copied().unwrap_or("0");
+            let lat = parts.first().copied().unwrap_or("0");
             let lon = parts.get(1).copied().unwrap_or("0");
             let filename = self
                 .file_pattern
@@ -173,7 +174,7 @@ impl GeoDataLoader for HttpLoader {
         // Save to local cache if configured
         if let Some(cache_path) = &self.local_cache_path {
             let parts: Vec<&str> = tile_id.split('_').collect();
-            let lat = parts.get(0).copied().unwrap_or("0");
+            let lat = parts.first().copied().unwrap_or("0");
             let lon = parts.get(1).copied().unwrap_or("0");
             let filename = self
                 .file_pattern
@@ -221,10 +222,7 @@ impl GeoDataLoader for HybridLoader {
                 return Ok(data);
             }
         }
-        Err(anyhow::anyhow!(
-            "Tile {} not found in any source",
-            tile_id
-        ))
+        Err(anyhow::anyhow!("Tile {} not found in any source", tile_id))
     }
 
     fn get_vector(&self, tile_id: &str) -> Result<String> {
@@ -233,10 +231,7 @@ impl GeoDataLoader for HybridLoader {
                 return Ok(data);
             }
         }
-        Err(anyhow::anyhow!(
-            "Tile {} not found in any source",
-            tile_id
-        ))
+        Err(anyhow::anyhow!("Tile {} not found in any source", tile_id))
     }
 
     fn preload(&self, tile_ids: &[&str]) -> Result<()> {
@@ -253,12 +248,10 @@ pub fn create_loader(source: &DataSource) -> Result<Arc<dyn GeoDataLoader>> {
         DataSource::LocalFile {
             base_path,
             file_pattern,
-        } => {
-            Ok(Arc::new(LocalFileLoader::new(
-                base_path.clone(),
-                file_pattern.clone(),
-            )))
-        }
+        } => Ok(Arc::new(LocalFileLoader::new(
+            base_path.clone(),
+            file_pattern.clone(),
+        ))),
         DataSource::Redis { url, key_prefix } => {
             Ok(Arc::new(RedisLoader::new(url, key_prefix.clone())?))
         }

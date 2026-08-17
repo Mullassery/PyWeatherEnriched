@@ -1,11 +1,11 @@
-/// Geospatial configuration - user controls where data comes from
-///
-/// Users can configure:
-/// - Local file cache (fastest, requires manual download)
-/// - Redis cache (shared across services)
-/// - HTTP download (on-demand from public APIs)
-/// - S3/GCS (cloud storage)
-/// - Hybrid (try each in order)
+//! Geospatial configuration - user controls where data comes from
+//!
+//! Users can configure:
+//! - Local file cache (fastest, requires manual download)
+//! - Redis cache (shared across services)
+//! - HTTP download (on-demand from public APIs)
+//! - S3/GCS (cloud storage)
+//! - Hybrid (try each in order)
 
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -66,7 +66,7 @@ pub enum DataSource {
 
     /// Load from Google Cloud Storage
     /// Example: gs://bucket/path/
-    GCS {
+    Gcs {
         bucket: String,
         prefix: String,
         file_pattern: String,
@@ -74,9 +74,7 @@ pub enum DataSource {
 
     /// Try multiple sources in order
     /// Falls back to next if current fails
-    Hybrid {
-        sources: Vec<Box<DataSource>>,
-    },
+    Hybrid { sources: Vec<DataSource> },
 }
 
 impl GeospatialConfig {
@@ -195,7 +193,7 @@ impl GeospatialConfig {
                 cache_ttl_seconds: 86400 * 30,
                 timeout_seconds: 15,
             },
-            vegetation: None,  // Optional: user must enable if needed
+            vegetation: None, // Optional: user must enable if needed
             soil: None,
             flood_risk: None,
         }
@@ -207,16 +205,16 @@ impl GeospatialConfig {
             elevation: DataSourceConfig {
                 source: DataSource::Hybrid {
                     sources: vec![
-                        Box::new(DataSource::LocalFile {
+                        DataSource::LocalFile {
                             base_path: local_path.clone(),
                             file_pattern: "srtm/{lat}_{lon}_COG.tif".to_string(),
-                        }),
-                        Box::new(DataSource::HttpUrl {
+                        },
+                        DataSource::HttpUrl {
                             base_url: http_base.to_string(),
                             file_pattern: "srtm/{lat}_{lon}.tif".to_string(),
                             cache_locally: true,
                             local_cache_path: Some(local_path.clone()),
-                        }),
+                        },
                     ],
                 },
                 cache_ttl_seconds: 86400 * 30,
@@ -244,35 +242,37 @@ impl GeospatialConfig {
     }
 }
 
-/// Example config file (geospatial.toml)
-///
-/// [elevation]
-/// source = "local_file"
-/// base_path = "/data/geospatial"
-/// file_pattern = "srtm/{lat}_{lon}_COG.tif"
-/// cache_ttl_seconds = 2592000
-/// timeout_seconds = 10
-///
-/// [urban_heat_island]
-/// source = "redis"
-/// url = "redis://localhost:6379"
-/// key_prefix = "geo:uhi:"
-/// cache_ttl_seconds = 2592000
-/// timeout_seconds = 5
-///
-/// [vegetation]
-/// source = "s3"
-/// bucket = "my-geospatial-data"
-/// region = "us-west-2"
-/// prefix = "sentinel/"
-/// file_pattern = "ndvi/{year}_{month:02d}.tif"
-/// cache_ttl_seconds = 2592000
-/// timeout_seconds = 15
-///
-/// [soil]
-/// # Not configured - optional layer disabled
-/// enabled = false
-///
-/// [flood_risk]
-/// # Not configured - optional layer disabled
-/// enabled = false
+/* Example config file (geospatial.toml)
+ *
+ *
+ * [elevation]
+ * source = "local_file"
+ * base_path = "/data/geospatial"
+ * file_pattern = "srtm/{lat}_{lon}_COG.tif"
+ * cache_ttl_seconds = 2592000
+ * timeout_seconds = 10
+ *
+ * [urban_heat_island]
+ * source = "redis"
+ * url = "redis://localhost:6379"
+ * key_prefix = "geo:uhi:"
+ * cache_ttl_seconds = 2592000
+ * timeout_seconds = 5
+ *
+ * [vegetation]
+ * source = "s3"
+ * bucket = "my-geospatial-data"
+ * region = "us-west-2"
+ * prefix = "sentinel/"
+ * file_pattern = "ndvi/{year}_{month:02d}.tif"
+ * cache_ttl_seconds = 2592000
+ * timeout_seconds = 15
+ *
+ * [soil]
+ * # Not configured - optional layer disabled
+ * enabled = false
+ *
+ * [flood_risk]
+ * # Not configured - optional layer disabled
+ * enabled = false
+ */

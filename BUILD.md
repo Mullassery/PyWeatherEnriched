@@ -1,6 +1,9 @@
 # Build Instructions
 
-PyWeatherEnriched is distributed as **wheels only**. Source code is proprietary and not included in the distribution.
+PyWeatherEnriched ships to PyPI as prebuilt wheels. Source is on GitHub at
+https://github.com/Mullassery/PyWeatherEnriched under a proprietary license
+(see `LICENSE`) — visible for review, not open for redistribution/reuse
+without permission.
 
 ## Installation from PyPI
 
@@ -104,11 +107,9 @@ git push origin v0.1.0
 ## Wheel Contents
 
 Each wheel contains:
-- `pyweatherenriched` compiled extension module (.so/.pyd)
-- Python stubs for type checking
+- `pyweatherenriched._pyweatherenriched`, the compiled Rust/PyO3 extension module (.so/.pyd)
+- The pure-Python `pyweatherenriched` package (`__init__.py`, `features.py`)
 - Metadata and license information
-
-**NO SOURCE CODE** is included in wheels (proprietary).
 
 ## Troubleshooting
 
@@ -137,10 +138,9 @@ sudo apt-get install libssl-dev
 
 ## Distribution Policy
 
-- **PyPI**: Wheels only (verified via `pip install`)
+- **PyPI**: Prebuilt wheels (verified via `pip install`)
 - **GitHub Releases**: Wheels as binary artifacts
-- **Source Code**: Proprietary, not distributed
-- **License**: Proprietary license (see LICENSE file)
+- **Source**: Public on GitHub, proprietary license (see LICENSE file — review is fine, redistribution/reuse is not)
 
 ## Support
 
@@ -148,23 +148,23 @@ For build issues:
 - GitHub Issues: https://github.com/Mullassery/PyWeatherEnriched/issues
 - Email: mullassery@gmail.com
 
-## Development Setup (For Contributors with Source Access)
-
-If you have access to the source code:
+## Development Setup
 
 ```bash
 # Clone repository
 git clone https://github.com/Mullassery/PyWeatherEnriched.git
 cd PyWeatherEnriched
 
-# Build development mode
-maturin develop
+# Build development mode (installs the extension into your active venv)
+maturin develop --release
 
-# Run tests
+# Run the Rust test suite
 cargo test
+
+# Run the Python test suite (needs `maturin develop` first)
+pip install -e ".[dev]"
+pytest tests/ -v
 
 # Build optimized wheels
 maturin build --release
 ```
-
-**Note**: Source code access is restricted and only available to authorized contributors under the proprietary license.

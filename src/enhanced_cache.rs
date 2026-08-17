@@ -76,11 +76,13 @@ impl DateRange {
         DateRange { start, end }
     }
 
-    fn contains(&self, dt: &DateTime<Utc>) -> bool {
+    /// Whether `dt` falls within this range (inclusive).
+    pub fn contains(&self, dt: &DateTime<Utc>) -> bool {
         dt >= &self.start && dt <= &self.end
     }
 
-    fn overlaps(&self, other: &DateRange) -> bool {
+    /// Whether this range shares any time with `other`.
+    pub fn overlaps(&self, other: &DateRange) -> bool {
         self.start <= other.end && self.end >= other.start
     }
 }
@@ -184,16 +186,25 @@ impl EnhancedCache {
         self.ttl_hours = hours;
     }
 
-    /// Get weather data with intelligent multi-tier lookup
+    /// Get weather data with intelligent multi-tier lookup.
+    ///
+    /// `location` isn't part of the lookup key (entries are keyed by a
+    /// geohash derived from `latitude`/`longitude` plus `timestamp` — see
+    /// `put`), but is kept as a parameter for symmetry with `put` and
+    /// because callers naturally have it on hand.
     pub fn get(
         &self,
-        location: &str,
+        _location: &str,
         latitude: f64,
         longitude: f64,
         timestamp: &str,
     ) -> Option<EnrichedData> {
         // Create geohash-based key for proximity matching (quantize to ~5km grid)
-        let geohash = format!("{}_{}", (latitude * 100.0).round() as i32, (longitude * 100.0).round() as i32);
+        let geohash = format!(
+            "{}_{}",
+            (latitude * 100.0).round() as i32,
+            (longitude * 100.0).round() as i32
+        );
         let key = CacheKey {
             geohash,
             timestamp: timestamp.to_string(),
@@ -246,7 +257,11 @@ impl EnhancedCache {
 
     /// Cache weather data with TTL
     pub fn put(&self, data: EnrichedData) -> Result<()> {
-        let geohash = format!("{}_{}", (data.latitude * 100.0).round() as i32, (data.longitude * 100.0).round() as i32);
+        let geohash = format!(
+            "{}_{}",
+            (data.latitude * 100.0).round() as i32,
+            (data.longitude * 100.0).round() as i32
+        );
         let key = CacheKey {
             geohash: geohash.clone(),
             timestamp: data.timestamp.clone(),
@@ -308,7 +323,12 @@ impl EnhancedCache {
     }
 
     /// Find nearby cached entries within proximity radius
-    fn find_nearby_cached(&self, latitude: f64, longitude: f64, timestamp: &str) -> Option<EnrichedData> {
+    fn find_nearby_cached(
+        &self,
+        latitude: f64,
+        longitude: f64,
+        timestamp: &str,
+    ) -> Option<EnrichedData> {
         let proximity = LocationProximity::new(latitude, longitude, self.proximity_radius_km);
 
         // Check memory cache for nearby entries
@@ -329,7 +349,11 @@ impl EnhancedCache {
                 if let Ok(nearby) = self.find_nearby_in_db(&db, latitude, longitude, timestamp) {
                     if !nearby.1.is_expired() {
                         if let Ok(mut mem) = self.memory.lock() {
-                            let geohash = format!("{}_{}", (nearby.0.latitude * 100.0).round() as i32, (nearby.0.longitude * 100.0).round() as i32);
+                            let geohash = format!(
+                                "{}_{}",
+                                (nearby.0.latitude * 100.0).round() as i32,
+                                (nearby.0.longitude * 100.0).round() as i32
+                            );
                             let key = CacheKey {
                                 geohash,
                                 timestamp: timestamp.to_string(),

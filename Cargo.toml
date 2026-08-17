@@ -1,6 +1,6 @@
 [package]
 name = "pyweatherenriched"
-version = "0.5.0"
+version = "0.6.0"
 edition = "2021"
 authors = ["Georgi Mammen Mullassery <mullassery@gmail.com>"]
 license = "Proprietary"
@@ -9,45 +9,42 @@ repository = "https://github.com/Mullassery/PyWeatherEnriched"
 
 [lib]
 name = "pyweatherenriched"
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-pyo3 = { version = "0.23", features = ["extension-module", "abi3-py310"] }
+# `extension-module` is opt-in (see [features] below), not a default pyo3
+# feature: with it always on, `cargo test`/`cargo build --bin ...` fail to
+# link because the resulting binary isn't loaded by a Python interpreter
+# that supplies libpython's symbols at runtime the way a real extension
+# module is. maturin enables it explicitly for wheel builds (see
+# pyproject.toml's [tool.maturin] features).
+pyo3 = { version = "0.23", features = ["abi3-py310"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tokio = { version = "1.35", features = ["full"] }
-reqwest = { version = "0.11", features = ["json"] }
+# rustls instead of the default OpenSSL/native-tls backend: pure Rust, no
+# system OpenSSL dependency, so cross-compiled release builds (aarch64
+# Linux, etc. in CI) don't need a cross-compiled OpenSSL toolchain.
+reqwest = { version = "0.11", default-features = false, features = ["json", "blocking", "rustls-tls"] }
+redis = "0.25"
+tiff = "0.9"
+geojson = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
-thiserror = "1.0"
 anyhow = "1.0"
-uuid = { version = "1.6", features = ["v4", "serde"] }
 lru = "0.12"
-async-trait = "0.1"
 rusqlite = { version = "0.31", features = ["bundled", "chrono"] }
 clap = { version = "4.4", features = ["derive"] }
-dialoguer = "0.11"
 toml = "0.8"
-indicatif = "0.17"
-rayon = "1.8"
-csv = "1.3"
-rdkafka = { version = "0.37", features = ["cmake-build"] }
-rumqttc = "0.25"
-axum = "0.7"
-tower = "0.4"
-tower-http = { version = "0.5", features = ["trace", "cors"] }
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
-futures = "0.3"
-parking_lot = "0.12"
-rand = "0.8"
-
-[[bin]]
-name = "pyweatherenriched-setup"
-path = "src/bin/setup.rs"
 
 [[bin]]
 name = "pyweatherenriched-validate"
 path = "src/bin/validate.rs"
+
+[features]
+extension-module = ["pyo3/extension-module"]
+
+[dev-dependencies]
+mockito = "1.5"
+tempfile = "3"
 
 [profile.release]
 opt-level = 3

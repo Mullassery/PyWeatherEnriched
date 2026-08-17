@@ -1,286 +1,179 @@
 # PyWeatherEnriched
 
-**Add weather to your data. 90-95% fewer API calls. One function.**
-
-Enrich operational datasets with hyperlocal weather in real-time or batch. Intelligent caching cuts API costs 90-95%. Built for forecasting, agriculture, energy, healthcare, logistics, and IoT.
+Real geocoding + real historical weather, wired into a Rust core with
+pandas/numpy climate feature engineering on top.
 
 [![PyPI](https://img.shields.io/pypi/v/pyweatherenriched)](https://pypi.org/project/pyweatherenriched)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org)
+[![Tests](https://github.com/Mullassery/PyWeatherEnriched/actions/workflows/tests.yml/badge.svg)](https://github.com/Mullassery/PyWeatherEnriched/actions/workflows/tests.yml)
 [![License: Proprietary](https://img.shields.io/badge/License-Proprietary-blue.svg)](./LICENSE)
 
----
+Given a location name and a timestamp, PyWeatherEnriched geocodes the
+location (OpenStreetMap Nominatim) and looks up the real, genuinely observed
+historical weather for that place and hour (Open-Meteo's free Archive API)
+— no formula-generated or fabricated numbers. The lookup/geocoding core is
+Rust (via PyO3) for speed and a small memory footprint; a Python layer on
+top adds pandas/numpy feature engineering (rolling aggregates,
+heating/cooling degree-days, cyclical time encoding, anomaly z-scores)
+useful for feeding weather into an ML pipeline.
 
-## 30-Second Start
-
-```python
-from pyweatherenriched import WeatherEnricher
-
-enricher = WeatherEnricher(cache_enabled=True)
-
-# Add weather to any data
-result = enricher.enrich_row(
-    location="New York",
-    timestamp="2024-07-21T12:00:00Z"
-)
-
-print(f"Temperature: {result.temperature}°C")
-print(f"Humidity: {result.humidity}%")
-print(f"Condition: {result.condition}")
-```
-
----
-
-## Why PyWeatherEnriched?
-
-**The Problem:**
-- Weather APIs are expensive (per-request billing)
-- Processing 1M rows burns budget fast
-- Temporal/spatial patterns ignored (redundant API calls)
-- No way to cache across time ranges
-
-**The Solution:**
-- Intelligent caching (90-95% API reduction)
-- Temporal range caching (query whole date ranges at once)
-- Geospatial clustering (reuse nearby location data)
-- Batch deduplication (identify unique requests upfront)
-
-## Key Features
-
-### 🚀 Enhanced Caching Layer (v0.3.0 NEW)
-
-- **Multi-Tier Architecture**: Memory (LRU) + Persistent (SQLite) tiers
-- **Temporal Range Caching**: Query weather for entire date ranges (70% API reduction)
-- **Geospatial Clustering**: Reuse nearby location data (60-80% savings)
-- **Batch Deduplication**: Identify unique requests before API calls (80-95% reduction)
-- **Smart TTL Management**: Configurable expiration, automatic cleanup
-
-### Performance Results
-
-| Scenario | Without Cache | With Cache | Savings |
-|----------|---------------|-----------|---------|
-| 1M rows, 100K unique locations | 100K API calls | 5-10K | **90-95%** |
-| 30-day enrichment, same cities | 30K API calls | 0-2K | **93-100%** |
-| Urban sensor network (100 sensors) | 72K API calls | 1-2K | **97-99%** |
-| Regional analysis (500 stations) | 50K+ API calls | 2-5K | **90-96%** |
-
-### Core Features
-
-- **Rust Engine**: High-performance compiled core with Python bindings
-- **PyO3 Bindings**: Zero-copy Python integration (Python 3.10+)
-- **Hyperlocal Precision**: Microgeography adjustments (UHI, elevation, wind)
-- **Parallel Processing**: Rayon-based multi-threaded batch enrichment
-- **Multiple Data Formats**: CSV, JSON, JSONL with nested data support
-- **Database Integration**: Snowflake, BigQuery, PostgreSQL backends
-- **MCP 2.0 Ready**: Integrated with unified platform (207 tools)
-
-## Installation
+## Install
 
 ```bash
 pip install pyweatherenriched
 ```
 
-Or with wheels only (recommended for production):
+Requires Python 3.10+. Ships as prebuilt wheels for Linux (x86_64/ARM64),
+macOS (Intel/Apple Silicon), and Windows (x86_64) — no Rust toolchain
+needed to install.
 
-```bash
-pip install --only-binary=:all: pyweatherenriched
-```
-
-## Quick Start
-
-### Basic Usage
+## Quick start
 
 ```python
 import pyweatherenriched as pwe
 
-# Create enricher
-enricher = pwe.WeatherEnricher(cache_size=1000)
+enricher = pwe.WeatherEnricher()
+result = enricher.enrich_row("New York", "2024-06-15T12:00:00")
 
-# Enrich single row
-result = enricher.enrich_row("New York", "2024-01-15T12:00:00Z")
-print(result)  # {location, latitude, longitude, temperature, humidity, condition, timestamp}
+print(result)
+# {'location': 'New York', 'latitude': 40.7127281, 'longitude': -74.0060152,
+#  'temperature': 19.4, 'humidity': 74.0, 'condition': 'Clear',
+#  'timestamp': '2024-06-15T12:00:00'}
 ```
 
-### Enhanced Caching (NEW)
+`enrich_row` makes two real network calls the first time it sees a
+location/timestamp pair (one to Nominatim to geocode `location`, one to
+Open-Meteo for the historical weather at those coordinates); the in-process
+cache means repeating the same lookup doesn't hit the network again:
+
+```python
+fresh = pwe.WeatherEnricher()
+fresh.enrich_row("New York", "2024-06-15T12:00:00")  # network
+fresh.enrich_row("New York", "2024-06-15T12:00:00")  # cache hit
+print(fresh.cache_stats())  # {'hits': 1, 'misses': 1, 'size': 1}
+```
+
+## Feature engineering on a DataFrame
+
+`enrich_dataframe` bridges the Rust core to pandas — fetch real weather for
+every row of a DataFrame in one call — and the `features` functions build
+standard climate ML features on top of the result:
+
+```python
+import pandas as pd
+import pyweatherenriched as pwe
+
+orders = pd.DataFrame({
+    "order_id": ["A1", "A2", "A3"],
+    "location": ["Chicago", "Miami", "Denver"],
+    "timestamp": ["2024-01-15T12:00:00", "2024-06-15T12:00:00", "2024-03-15T12:00:00"],
+})
+
+enricher = pwe.WeatherEnricher()
+enriched = pwe.enrich_dataframe(enricher, orders)     # + latitude/longitude/temperature/humidity/condition
+features = pwe.build_features(enriched)                # + hdd/cdd, cyclical time, rolling stats, anomaly z-score
+
+print(features[["order_id", "temperature", "hdd", "cdd", "temperature_zscore"]])
+```
+
+Rows whose lookup fails (unresolvable location, upstream error) get `NaN`
+in the new columns instead of raising or fabricating a value, so one bad
+row doesn't lose the batch.
+
+`build_features` is a convenience pipeline; each step is also a standalone
+function you can call individually with more control:
+
+| Function | What it adds |
+|---|---|
+| `add_degree_days(df, temp_col, base_temp=18.0)` | `hdd`, `cdd` — heating/cooling degree-days (standard energy-demand/agriculture signal: `max(0, base - t)` / `max(0, t - base)`) |
+| `add_cyclical_time_features(df, timestamp_col)` | `hour_sin/cos`, `day_of_week_sin/cos`, `day_of_year_sin/cos` — sin/cos encoding so e.g. 23:59 and 00:00 stay numerically adjacent |
+| `add_rolling_features(df, value_col, window, group_col=None, stats=(...))` | trailing rolling aggregates (mean/std/min/max/...), optionally computed independently per group (e.g. per location) |
+| `add_anomaly_features(df, value_col, group_col=None, baseline="expanding"\|"rolling"\|"global")` | a z-score measuring how unusual each reading is relative to a chosen baseline |
+
+## Caching
+
+`WeatherEnricher` has a small built-in LRU cache. For larger workloads,
+`EnhancedCache` adds a second, SQLite-backed persistent tier with
+geospatial-proximity matching, TTL expiration, batch deduplication, and
+date-range queries:
 
 ```python
 from pyweatherenriched import EnhancedCache
 
-# Create cache with persistence
 cache = EnhancedCache(cache_size=5000, db_path="weather_cache.db")
+cache.set_proximity_radius(10.0)  # treat lookups within 10km as cache hits
+cache.set_ttl(72)                 # hours before an entry expires
 
-# Configure for your use case
-cache.set_proximity_radius(10.0)  # 10km for cities
-cache.set_ttl(72)  # 72-hour TTL
-
-# Cache weather data
-cache.put(
-    location="New York",
-    latitude=40.7128,
-    longitude=-74.0060,
-    temperature=15.2,
-    humidity=65.0,
-    condition="Partly Cloudy",
-    timestamp="2024-01-15T12:00:00Z"
-)
-
-# Retrieve with intelligent fallback
+cache.put("New York", 40.7128, -74.0060, 15.2, 65.0, "Partly Cloudy", "2024-01-15T12:00:00Z")
 result = cache.get("New York", 40.7128, -74.0060, "2024-01-15T12:00:00Z")
 
-# Batch deduplication
+# Deduplicate a batch before making any API calls.
 batch = [
     ("New York", 40.7128, -74.0060, "2024-01-15T12:00:00Z"),
     ("New York", 40.7128, -74.0060, "2024-01-15T12:00:00Z"),  # duplicate
-    ("Herald Square", 40.7505, -73.9865, "2024-01-15T12:00:00Z"),  # nearby
 ]
-
 missing_indices, cache_hits = cache.deduplicate_batch(batch)
-print(f"API calls needed: {len(missing_indices)}, Cache hits: {cache_hits}")
 
-# Monitor performance
+# Every observation in a date range near a point (requires db_path).
+rows = cache.get_range(40.7128, -74.0060, "2024-01-01T00:00:00Z", "2024-01-31T23:59:59Z")
+
 stats = cache.stats()
-print(f"Hit ratio: {stats['hit_ratio']:.1%}")
+print(f"hit ratio: {stats['hit_ratio']:.1%}")
 ```
 
-### Batch Enrichment
+`get()` checks the memory tier, then the persistent tier (if `db_path` was
+given), then falls back to a proximity search; `get_range` only queries the
+persistent tier, so it always returns `[]` without `db_path`.
 
-```python
-# Load CSV/JSON and enrich with weather
-enricher = pwe.WeatherEnricher()
+## What's real vs. not (yet)
 
-enriched_data = enricher.enrich_batch([
-    ("New York", "2024-01-15T12:00:00Z"),
-    ("Los Angeles", "2024-01-15T12:00:00Z"),
-    ("Chicago", "2024-01-15T12:00:00Z"),
-])
+- **Real**: forward geocoding (Nominatim), historical weather (Open-Meteo
+  Archive API), in-memory LRU cache, SQLite-backed `EnhancedCache`
+  (proximity matching, TTL, dedup, date-range queries), pandas/numpy
+  feature engineering.
+- **Not yet exposed to Python**: the crate has additional Rust-side,
+  independently unit-tested building blocks — elevation/lapse-rate
+  adjustment (real SRTM GeoTIFF parsing), urban-heat-island modeling (real
+  OSM building-density analysis), and OSM-based reverse geocoding — that
+  aren't wired into the Python API yet. They live under `src/geospatial/`
+  if you want to build on them.
+- **Deliberately unimplemented**: vegetation/NDVI, soil, and flood-risk
+  layers, plus Google Maps/USPS reverse-geocoding sources, are framework
+  stubs (`src/geospatial/optional.rs`) that return a clear "not yet
+  implemented" error rather than fake data.
 
-# Export results
-enricher.export_csv("output.csv")
+## Development
+
+```bash
+git clone https://github.com/Mullassery/PyWeatherEnriched.git
+cd PyWeatherEnriched
+
+maturin develop --release   # build the Rust extension + install editable
+cargo test                  # Rust unit tests (32 tests)
+pip install -e ".[dev]"
+pytest tests/ -v            # Python tests (33 tests, incl. live-network ones)
 ```
 
-## Documentation
+`cargo run --bin pyweatherenriched-validate` is a small smoke-test CLI that
+exercises real geocoding + weather fetch end to end — useful to confirm a
+build/environment can actually reach Nominatim and Open-Meteo.
 
-- **[ENHANCED_CACHE.md](docs/ENHANCED_CACHE.md)** - Complete caching guide with API reference
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System design and module breakdown
-- **[examples/mcp_enhanced_cache.py](examples/mcp_enhanced_cache.py)** - 5 practical examples
-- **[examples/mcp_enhanced_cache_use_cases.py](examples/mcp_enhanced_cache_use_cases.py)** - 6 industry use cases
-
-## Use Cases
-
-### 🔬 Climate Research
-50-year historical analysis across 500 weather stations
-- **Before**: 9.1M API calls
-- **After**: 50-100K API calls with smart caching
-- **Savings**: 94-99%
-
-### 🌾 Agricultural Optimization
-Soil moisture monitoring across 200 fields with 800 sensors
-- **Before**: 3.5M readings
-- **After**: Smart clustering reduces to 5-10% unique requests
-- **Cost**: ~$0.50 per growing season (vs $50)
-
-### 🏥 Healthcare Epidemiology
-Disease-weather correlation across hospital network
-- **Before**: 91K location-date combinations = many API calls
-- **After**: 5-10K unique requests with deduplication
-- **Efficiency**: 90%+ dedup in overlapping data
-
-### ⚡ Energy Grid Management
-Load forecasting from 200 substations hourly
-- **Before**: 144K readings
-- **After**: 2-5K unique with proximity matching
-- **Real-time**: Sub-second forecast generation
-
-### 🌍 Environmental Monitoring
-Air quality correlation across 300 stations
-- **Before**: 2.6M data points
-- **After**: 10-15% unique with intelligent caching
-- **Latency**: 10x faster analysis
-
-### ♻️ Renewable Energy Forecasting
-Solar/wind prediction from 1,500 assets
-- **Before**: 1M+ data points
-- **After**: 50-100K unique with 15-min grouping
-- **Cost/forecast**: $0.01 (vs $0.50)
-
-## MCP 2.0 Integration
-
-Part of unified **MCP 2.0 Mega-Platform** (207 tools across 18 projects):
-- Discoverable via MCP protocol protocol on port 8769
-- Multi-project workflows with intelligent optimization
-- Cross-database joins with cost-optimized routing
-
-See [MCP_QUICKSTART.md](MCP_QUICKSTART.md) for details.
-
-## Benchmarks
-
-```
-Single Row Enrichment:      ~200-500ms (includes API call)
-Cached Row Lookup:          ~10-50ms (memory tier)
-Batch Processing (1M rows): ~2-4 hours (with parallelization)
-Cache Hit Ratio:            70% typical (24-hour TTL)
-```
+See [BUILD.md](BUILD.md) for wheel-building/release details.
 
 ## Requirements
 
 - Python 3.10+
-- Rust 1.70+ (for building from source)
-- SQLite 3.44+ (bundled)
-
-## Building from Source
-
-```bash
-# Install Rust
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-
-# Build extension
-cargo build --release
-
-# Install in development mode
-pip install -e .
-```
-
-## Storage Requirements
-
-| Scale | DB Size | Memory (LRU) | Typical Usage |
-|-------|---------|--------------|---------------|
-| 10K entries | 1MB | 10MB | Single project, 1 week |
-| 100K entries | 10MB | 50MB | Multi-project, 1 month |
-| 1M entries | 100MB | 200MB | Large scale, 3+ months |
-| 10M entries | 1GB | 1.5GB | Enterprise, 1+ year |
-
-## Version History
-
-### v0.3.0 (Current) - Enhanced Caching
-- ✅ Multi-tier caching (memory + SQLite)
-- ✅ Temporal range queries (70% API reduction)
-- ✅ Geospatial clustering (60-80% savings)
-- ✅ Batch deduplication (80-95% reduction)
-- ✅ Comprehensive documentation & examples
-- ✅ 6 real-world use case implementations
-
-### v0.2.0 - Rust+PyO3 Engine
-- Rust-based weather enrichment
-- Python 3.13 support
-- Async API integration
-
-### v0.1.0 - Initial Release
-- Basic weather enrichment
-- CSV/JSON support
-
-## Contributing
-
-Contributions welcome! Submit issues and PRs on GitHub.
+- Rust 1.75+ (only if building from source — not needed to `pip install`)
+- Network access to `nominatim.openstreetmap.org` and
+  `archive-api.open-meteo.com` at call time (no API key needed for either)
 
 ## License
 
-Proprietary - Mullassery Weather Systems
+Proprietary — see [LICENSE](LICENSE). Source is public on GitHub for
+review; this isn't an open-source license, so redistribution/reuse isn't
+granted by default.
 
 ## Support
 
-- 📖 **Documentation**: See [docs/](docs/) directory
-- 🐛 **Issues**: GitHub Issues
-- 💬 **Email**: mullassery@gmail.com
-
----
-
-**PyWeatherEnriched v0.3.0 | Hyperlocal Weather Enrichment | 90-98% API Cost Reduction**
+- Issues: https://github.com/Mullassery/PyWeatherEnriched/issues
+- Email: mullassery@gmail.com
