@@ -1,6 +1,6 @@
 [package]
 name = "pyweatherenriched"
-version = "0.5.0"
+version = "0.6.0"
 edition = "2021"
 authors = ["Georgi Mammen Mullassery <mullassery@gmail.com>"]
 license = "Proprietary"
@@ -9,36 +9,35 @@ repository = "https://github.com/Mullassery/PyWeatherEnriched"
 
 [lib]
 name = "pyweatherenriched"
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-pyo3 = { version = "0.23", features = ["extension-module", "abi3-py310"] }
+# `extension-module` is opt-in (see [features] below), not a default pyo3
+# feature: with it always on, `cargo test`/`cargo build --bin ...` fail to
+# link because the resulting binary isn't loaded by a Python interpreter
+# that supplies libpython's symbols at runtime the way a real extension
+# module is. maturin enables it explicitly for wheel builds (see
+# pyproject.toml's [tool.maturin] features).
+pyo3 = { version = "0.23", features = ["abi3-py310"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tokio = { version = "1.35", features = ["full"] }
 reqwest = { version = "0.11", features = ["json", "blocking"] }
 redis = "0.25"
 tiff = "0.9"
 geojson = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
-thiserror = "1.0"
 anyhow = "1.0"
-uuid = { version = "1.6", features = ["v4", "serde"] }
 lru = "0.12"
-async-trait = "0.1"
 rusqlite = { version = "0.31", features = ["bundled", "chrono"] }
 clap = { version = "4.4", features = ["derive"] }
-dialoguer = "0.11"
 toml = "0.8"
-indicatif = "0.17"
-
-[[bin]]
-name = "pyweatherenriched-setup"
-path = "src/bin/setup.rs"
 
 [[bin]]
 name = "pyweatherenriched-validate"
 path = "src/bin/validate.rs"
+
+[features]
+extension-module = ["pyo3/extension-module"]
 
 [dev-dependencies]
 mockito = "1.5"
