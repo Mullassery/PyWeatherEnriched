@@ -138,9 +138,9 @@ persistent tier, so it always returns `[]` without `db_path`.
   aren't wired into the Python API yet. They live under `src/geospatial/`
   if you want to build on them.
 - **Deliberately unimplemented**: vegetation/NDVI, soil, and flood-risk
-  layers, plus Google Maps/USPS reverse-geocoding sources, are framework
-  stubs (`src/geospatial/optional.rs`) that return a clear "not yet
-  implemented" error rather than fake data.
+  layers, plus additional commercial reverse-geocoding provider backends,
+  are framework stubs (`src/geospatial/optional.rs`) that return a clear
+  "not yet implemented" error rather than fake data.
 
 ## Development
 
