@@ -21,7 +21,10 @@ crate-type = ["cdylib", "rlib"]
 pyo3 = { version = "0.23", features = ["abi3-py310"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-reqwest = { version = "0.11", features = ["json", "blocking"] }
+# rustls instead of the default OpenSSL/native-tls backend: pure Rust, no
+# system OpenSSL dependency, so cross-compiled release builds (aarch64
+# Linux, etc. in CI) don't need a cross-compiled OpenSSL toolchain.
+reqwest = { version = "0.11", default-features = false, features = ["json", "blocking", "rustls-tls"] }
 redis = "0.25"
 tiff = "0.9"
 geojson = "1.0"
