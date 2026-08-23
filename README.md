@@ -23,9 +23,15 @@ useful for feeding weather into an ML pipeline.
 pip install pyweatherenriched
 ```
 
-Requires Python 3.10+. Ships as prebuilt wheels for Linux (x86_64/ARM64),
-macOS (Intel/Apple Silicon), and Windows (x86_64) — no Rust toolchain
-needed to install.
+Requires Python 3.10+. CI builds prebuilt wheels for Linux (x86_64/ARM64),
+macOS (Intel/Apple Silicon), and Windows (x86_64) on every release, but the
+CI→PyPI publish step is currently broken (PyPI rejects the upload with
+`403 Invalid or non-existent authentication information` — a stale/invalid
+API token), so **only a macOS ARM64 wheel is actually published on PyPI
+today**. On any other platform, `pip install pyweatherenriched` will fall
+back to building the sdist from source, which does need a Rust toolchain
+(see Requirements below) despite the other-platform wheels existing as CI
+build artifacts.
 
 ## Quick start
 
@@ -149,10 +155,19 @@ git clone https://github.com/Mullassery/PyWeatherEnriched.git
 cd PyWeatherEnriched
 
 maturin develop --release   # build the Rust extension + install editable
-cargo test                  # Rust unit tests (32 tests)
+cargo test --lib            # Rust unit tests (32 tests)
 pip install -e ".[dev]"
 pytest tests/ -v            # Python tests (33 tests, incl. live-network ones)
 ```
+
+Note: plain `cargo test` (without `--lib`) currently fails to compile —
+`tests/phase2_integration_test.rs` references `ParallelEnricher`,
+`BatchResolver`, `StreamingReader`/`StreamingWriter`, and `DatabaseConfig`/
+`DatabaseType` from `src/parallel.rs`, `src/batch_resolver.rs`,
+`src/streaming_io.rs`, and `src/database.rs` — source files that exist on
+disk but aren't declared as `mod`s in `src/lib.rs`, so they're not part of
+the compiled crate and that integration test is stale. Use `cargo test
+--lib` to run the real, passing unit test suite.
 
 `cargo run --bin pyweatherenriched-validate` is a small smoke-test CLI that
 exercises real geocoding + weather fetch end to end — useful to confirm a
