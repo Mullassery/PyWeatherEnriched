@@ -147,6 +147,16 @@ persistent tier, so it always returns `[]` without `db_path`.
   layers, plus additional commercial reverse-geocoding provider backends,
   are framework stubs (`src/geospatial/optional.rs`) that return a clear
   "not yet implemented" error rather than fake data.
+- **Not yet real (external critique, verified)**: no rate-limit/backoff
+  handling around the Nominatim/Open-Meteo HTTP clients (`src/enricher.rs`,
+  `src/geocoder.rs` use plain `reqwest::blocking::Client` with only a 15s
+  timeout — no retry, no 429 handling); and no range-based historical
+  backfill — `enrich()`/`enrich_batch` only fetch single-day archive data
+  per call even though Open-Meteo's Archive API supports date ranges.
+  (Note: the "no local caching layer" critique item does not hold —
+  `EnhancedCache` is a real SQLite-backed persistent cache with TTL and
+  proximity matching; it's just opt-in rather than auto-wired into
+  `WeatherEnricher.enrich()`, which is worth its own small TODO.)
 
 ## Development
 
