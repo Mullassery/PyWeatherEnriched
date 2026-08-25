@@ -56,12 +56,12 @@ impl Geocoder {
             }
         }
 
-        let response = self
-            .client
-            .get(&self.base_url)
-            .query(&[("q", location), ("format", "json"), ("limit", "1")])
-            .send()
-            .map_err(|e| anyhow!("geocoding request failed for {location:?}: {e}"))?;
+        let response = crate::http_retry::send_with_retry(
+            self.client
+                .get(&self.base_url)
+                .query(&[("q", location), ("format", "json"), ("limit", "1")]),
+        )
+        .map_err(|e| anyhow!("geocoding request failed for {location:?}: {e}"))?;
 
         if !response.status().is_success() {
             return Err(anyhow!(

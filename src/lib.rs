@@ -4,6 +4,7 @@ mod cache;
 mod enhanced_cache;
 mod enricher;
 mod geocoder;
+mod http_retry;
 mod python_bindings;
 mod types;
 // Elevation/UHI/reverse-geocoding/data-source building blocks. These are
@@ -113,6 +114,41 @@ impl PyWeatherEnricher {
         dict.set_item("misses", stats.1)?;
         dict.set_item("size", stats.2)?;
         Ok(dict.into())
+    }
+
+    /// Historical backfill: fetch every observed hourly weather record for
+    /// `location` across `[start_date, end_date]` (inclusive, "YYYY-MM-DD")
+    /// in a single request, instead of calling `enrich_row`/`enrich_batch`
+    /// once per day.
+    fn enrich_range(
+        &mut self,
+        location: String,
+        start_date: String,
+        end_date: String,
+        py: Python,
+    ) -> PyResult<PyObject> {
+        match self.inner.enrich_range(&location, &start_date, &end_date) {
+            Ok(results) => {
+                let rows: Vec<PyObject> = results
+                    .into_iter()
+                    .map(|result| -> PyResult<PyObject> {
+                        let dict = pyo3::types::PyDict::new(py);
+                        dict.set_item("location", result.location)?;
+                        dict.set_item("latitude", result.latitude)?;
+                        dict.set_item("longitude", result.longitude)?;
+                        dict.set_item("temperature", result.temperature)?;
+                        dict.set_item("humidity", result.humidity)?;
+                        dict.set_item("condition", result.condition)?;
+                        dict.set_item("timestamp", result.timestamp)?;
+                        Ok(dict.into_any().unbind())
+                    })
+                    .collect::<PyResult<Vec<_>>>()?;
+                Ok(pyo3::types::PyList::new(py, &rows)?.into())
+            }
+            Err(e) => Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(
+                e.to_string(),
+            )),
+        }
     }
 }
 

@@ -59,6 +59,22 @@ fresh.enrich_row("New York", "2024-06-15T12:00:00")  # cache hit
 print(fresh.cache_stats())  # {'hits': 1, 'misses': 1, 'size': 1}
 ```
 
+## Historical backfill
+
+`enrich_row`/`enrich_batch` fetch one day of data per call. To backfill a
+date range for a location, `enrich_range` geocodes once and fetches every
+hourly observation across the whole range in a single Open-Meteo request:
+
+```python
+enricher = pwe.WeatherEnricher()
+rows = enricher.enrich_range("Chicago", "2024-06-01", "2024-06-07")
+print(len(rows))  # ~168 (7 days x 24 hours, minus any hours Open-Meteo has no data for)
+```
+
+Hours Open-Meteo has no observation for (e.g. the tail of a range that
+runs past the latest available data) are omitted from the result rather
+than filled with a fabricated value.
+
 ## Feature engineering on a DataFrame
 
 `enrich_dataframe` bridges the Rust core to pandas — fetch real weather for
@@ -147,16 +163,20 @@ persistent tier, so it always returns `[]` without `db_path`.
   layers, plus additional commercial reverse-geocoding provider backends,
   are framework stubs (`src/geospatial/optional.rs`) that return a clear
   "not yet implemented" error rather than fake data.
-- **Not yet real (external critique, verified)**: no rate-limit/backoff
-  handling around the Nominatim/Open-Meteo HTTP clients (`src/enricher.rs`,
-  `src/geocoder.rs` use plain `reqwest::blocking::Client` with only a 15s
-  timeout — no retry, no 429 handling); and no range-based historical
-  backfill — `enrich()`/`enrich_batch` only fetch single-day archive data
-  per call even though Open-Meteo's Archive API supports date ranges.
-  (Note: the "no local caching layer" critique item does not hold —
+- **Fixed (external critique, verified real gaps)**: `src/enricher.rs` and
+  `src/geocoder.rs` now retry through `src/http_retry.rs` — exponential
+  backoff with jitter on 429/5xx responses and transport errors, honoring
+  a numeric `Retry-After` header when Nominatim/Open-Meteo send one — where
+  every request previously went out once with no retry at all. Range-based
+  historical backfill is real too: `WeatherEnricher.enrich_range(location,
+  start_date, end_date)` (exposed to Python as `enrich_range`) geocodes
+  once and fetches the entire date range in a single Open-Meteo request,
+  instead of the one-call-per-day pattern `enrich`/`enrich_batch` still
+  use for their single-timestamp use case. See "Historical backfill" above.
+  (Note: the "no local caching layer" critique item never held —
   `EnhancedCache` is a real SQLite-backed persistent cache with TTL and
   proximity matching; it's just opt-in rather than auto-wired into
-  `WeatherEnricher.enrich()`, which is worth its own small TODO.)
+  `WeatherEnricher.enrich()`, which remains its own small, separate TODO.)
 
 ## Development
 

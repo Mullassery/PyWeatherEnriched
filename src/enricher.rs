@@ -123,21 +123,17 @@ impl WeatherEnricher {
         let target = parse_timestamp(timestamp)?;
         let date_str = target.format("%Y-%m-%d").to_string();
 
-        let response = self
-            .client
-            .get(&self.archive_url)
-            .query(&[
-                ("latitude", latitude.to_string()),
-                ("longitude", longitude.to_string()),
-                ("start_date", date_str.clone()),
-                ("end_date", date_str),
-                (
-                    "hourly",
-                    "temperature_2m,relative_humidity_2m,weather_code".to_string(),
-                ),
-            ])
-            .send()
-            .map_err(|e| anyhow!("weather request failed for {location:?}: {e}"))?;
+        let response = crate::http_retry::send_with_retry(self.client.get(&self.archive_url).query(&[
+            ("latitude", latitude.to_string()),
+            ("longitude", longitude.to_string()),
+            ("start_date", date_str.clone()),
+            ("end_date", date_str),
+            (
+                "hourly",
+                "temperature_2m,relative_humidity_2m,weather_code".to_string(),
+            ),
+        ]))
+        .map_err(|e| anyhow!("weather request failed for {location:?}: {e}"))?;
 
         if !response.status().is_success() {
             return Err(anyhow!(
@@ -195,6 +191,86 @@ impl WeatherEnricher {
         }
 
         Ok(data)
+    }
+
+    /// Historical backfill: fetch every observed hourly weather record for
+    /// `location` across `[start_date, end_date]` (inclusive, "YYYY-MM-DD")
+    /// in a single Open-Meteo Archive API call, geocoding the location
+    /// once.
+    ///
+    /// Previously `enrich()`/the batched `enrich_batch` were the only entry
+    /// points, and both fetch exactly one day (`start_date == end_date`)
+    /// per HTTP call -- backfilling N days of history meant N round-trips,
+    /// even though the Archive API already supports date ranges natively.
+    /// This makes one request for the whole range instead.
+    pub fn enrich_range(
+        &self,
+        location: &str,
+        start_date: &str,
+        end_date: &str,
+    ) -> Result<Vec<EnrichedData>> {
+        let start = chrono::NaiveDate::parse_from_str(start_date, "%Y-%m-%d")
+            .map_err(|e| anyhow!("invalid start_date {start_date:?}: {e}"))?;
+        let end = chrono::NaiveDate::parse_from_str(end_date, "%Y-%m-%d")
+            .map_err(|e| anyhow!("invalid end_date {end_date:?}: {e}"))?;
+        if start > end {
+            return Err(anyhow!(
+                "start_date {start_date:?} is after end_date {end_date:?}"
+            ));
+        }
+
+        let (latitude, longitude) = self.geocoder.geocode(location)?;
+
+        let response = crate::http_retry::send_with_retry(self.client.get(&self.archive_url).query(&[
+            ("latitude", latitude.to_string()),
+            ("longitude", longitude.to_string()),
+            ("start_date", start_date.to_string()),
+            ("end_date", end_date.to_string()),
+            (
+                "hourly",
+                "temperature_2m,relative_humidity_2m,weather_code".to_string(),
+            ),
+        ]))
+        .map_err(|e| anyhow!("weather range request failed for {location:?}: {e}"))?;
+
+        if !response.status().is_success() {
+            return Err(anyhow!(
+                "weather service returned status {} for {location:?} range {start_date}..{end_date}",
+                response.status()
+            ));
+        }
+
+        let parsed: ArchiveResponse = response.json().map_err(|e| {
+            anyhow!("failed to parse weather range response for {location:?}: {e}")
+        })?;
+
+        let n = parsed.hourly.time.len();
+        let mut out = Vec::with_capacity(n);
+        for i in 0..n {
+            let (Some(temperature), Some(humidity)) = (
+                parsed.hourly.temperature_2m.get(i).copied().flatten(),
+                parsed.hourly.relative_humidity_2m.get(i).copied().flatten(),
+            ) else {
+                // Open-Meteo returns null for hours it has no observation
+                // for yet (e.g. the tail end of a range that runs past the
+                // latest available data) -- skip those rather than
+                // fabricating a value.
+                continue;
+            };
+            let weather_code = parsed.hourly.weather_code.get(i).copied().flatten().unwrap_or(-1);
+
+            out.push(EnrichedData {
+                location: location.to_string(),
+                latitude,
+                longitude,
+                temperature,
+                humidity,
+                condition: condition_from_wmo_code(weather_code).to_string(),
+                timestamp: parsed.hourly.time[i].clone(),
+            });
+        }
+
+        Ok(out)
     }
 
     /// (hits, misses, current cache size)
@@ -304,6 +380,93 @@ mod tests {
         assert_eq!(hits, 1);
         assert_eq!(misses, 1);
         assert_eq!(size, 1);
+    }
+
+    #[test]
+    fn test_enrich_range_fetches_whole_range_in_one_request() {
+        let mut server = mockito::Server::new();
+        let _geocode_mock = server
+            .mock("GET", mockito::Matcher::Any)
+            .match_query(mockito::Matcher::UrlEncoded("q".into(), "Boston".into()))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"[{"lat": "42.3601", "lon": "-71.0589"}]"#)
+            .create();
+        let weather_mock = server
+            .mock("GET", mockito::Matcher::Any)
+            .match_query(mockito::Matcher::AllOf(vec![
+                mockito::Matcher::UrlEncoded("start_date".into(), "2026-01-01".into()),
+                mockito::Matcher::UrlEncoded("end_date".into(), "2026-01-02".into()),
+            ]))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(
+                r#"{"hourly": {
+                    "time": ["2026-01-01T00:00", "2026-01-01T01:00", "2026-01-02T00:00"],
+                    "temperature_2m": [1.0, 2.0, 3.0],
+                    "relative_humidity_2m": [50.0, 51.0, 52.0],
+                    "weather_code": [0, 1, 61]
+                }}"#,
+            )
+            .expect(1)
+            .create();
+
+        let enricher = enricher_with_mock(server.url());
+        let rows = enricher
+            .enrich_range("Boston", "2026-01-01", "2026-01-02")
+            .unwrap();
+
+        weather_mock.assert();
+        assert_eq!(rows.len(), 3);
+        assert_eq!(rows[0].timestamp, "2026-01-01T00:00");
+        assert_eq!(rows[2].condition, "Rain");
+        assert!(rows.iter().all(|r| r.location == "Boston"));
+    }
+
+    #[test]
+    fn test_enrich_range_skips_null_observations_instead_of_fabricating() {
+        let mut server = mockito::Server::new();
+        let _geocode_mock = server
+            .mock("GET", mockito::Matcher::Any)
+            .match_query(mockito::Matcher::UrlEncoded("q".into(), "Denver".into()))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"[{"lat": "39.7392", "lon": "-104.9903"}]"#)
+            .create();
+        let _weather_mock = server
+            .mock("GET", mockito::Matcher::Any)
+            .match_query(mockito::Matcher::UrlEncoded(
+                "latitude".into(),
+                "39.7392".into(),
+            ))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(
+                r#"{"hourly": {
+                    "time": ["2026-01-01T00:00", "2026-01-01T01:00"],
+                    "temperature_2m": [1.0, null],
+                    "relative_humidity_2m": [50.0, null],
+                    "weather_code": [0, null]
+                }}"#,
+            )
+            .create();
+
+        let enricher = enricher_with_mock(server.url());
+        let rows = enricher
+            .enrich_range("Denver", "2026-01-01", "2026-01-01")
+            .unwrap();
+
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].timestamp, "2026-01-01T00:00");
+    }
+
+    #[test]
+    fn test_enrich_range_rejects_start_after_end() {
+        let server = mockito::Server::new();
+        let enricher = enricher_with_mock(server.url());
+        assert!(enricher
+            .enrich_range("Boston", "2026-01-05", "2026-01-01")
+            .is_err());
     }
 
     #[test]
