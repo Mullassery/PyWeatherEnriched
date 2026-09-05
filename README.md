@@ -214,9 +214,7 @@ See [BUILD.md](BUILD.md) for wheel-building/release details.
 
 ## License
 
-Proprietary — see [LICENSE](LICENSE). Source is public on GitHub for
-review; this isn't an open-source license, so redistribution/reuse isn't
-granted by default.
+This project is licensed under the [Apache License 2.0](LICENSE).
 
 ## Support
 
