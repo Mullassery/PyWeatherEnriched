@@ -17,6 +17,17 @@ top adds pandas/numpy feature engineering (rolling aggregates,
 heating/cooling degree-days, cyclical time encoding, anomaly z-scores)
 useful for feeding weather into an ML pipeline.
 
+## Use cases
+
+- **Enriching a training dataset with real historical weather** for a
+  location/timestamp pair, instead of a synthetic or averaged fill-in.
+- **Feature engineering for weather-sensitive ML models** — rolling
+  aggregates, heating/cooling degree-days, cyclical time encoding, and
+  anomaly z-scores, ready to feed into a pipeline.
+- **Not yet a good fit for:** real-time/forecast weather (this is
+  historical, observed data only) — see
+  [What's real vs. not (yet)](#whats-real-vs-not-yet) below for the full list.
+
 ## Install
 
 ```bash
