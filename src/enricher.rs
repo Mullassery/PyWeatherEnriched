@@ -123,17 +123,18 @@ impl WeatherEnricher {
         let target = parse_timestamp(timestamp)?;
         let date_str = target.format("%Y-%m-%d").to_string();
 
-        let response = crate::http_retry::send_with_retry(self.client.get(&self.archive_url).query(&[
-            ("latitude", latitude.to_string()),
-            ("longitude", longitude.to_string()),
-            ("start_date", date_str.clone()),
-            ("end_date", date_str),
-            (
-                "hourly",
-                "temperature_2m,relative_humidity_2m,weather_code".to_string(),
-            ),
-        ]))
-        .map_err(|e| anyhow!("weather request failed for {location:?}: {e}"))?;
+        let response =
+            crate::http_retry::send_with_retry(self.client.get(&self.archive_url).query(&[
+                ("latitude", latitude.to_string()),
+                ("longitude", longitude.to_string()),
+                ("start_date", date_str.clone()),
+                ("end_date", date_str),
+                (
+                    "hourly",
+                    "temperature_2m,relative_humidity_2m,weather_code".to_string(),
+                ),
+            ]))
+            .map_err(|e| anyhow!("weather request failed for {location:?}: {e}"))?;
 
         if !response.status().is_success() {
             return Err(anyhow!(
@@ -221,17 +222,18 @@ impl WeatherEnricher {
 
         let (latitude, longitude) = self.geocoder.geocode(location)?;
 
-        let response = crate::http_retry::send_with_retry(self.client.get(&self.archive_url).query(&[
-            ("latitude", latitude.to_string()),
-            ("longitude", longitude.to_string()),
-            ("start_date", start_date.to_string()),
-            ("end_date", end_date.to_string()),
-            (
-                "hourly",
-                "temperature_2m,relative_humidity_2m,weather_code".to_string(),
-            ),
-        ]))
-        .map_err(|e| anyhow!("weather range request failed for {location:?}: {e}"))?;
+        let response =
+            crate::http_retry::send_with_retry(self.client.get(&self.archive_url).query(&[
+                ("latitude", latitude.to_string()),
+                ("longitude", longitude.to_string()),
+                ("start_date", start_date.to_string()),
+                ("end_date", end_date.to_string()),
+                (
+                    "hourly",
+                    "temperature_2m,relative_humidity_2m,weather_code".to_string(),
+                ),
+            ]))
+            .map_err(|e| anyhow!("weather range request failed for {location:?}: {e}"))?;
 
         if !response.status().is_success() {
             return Err(anyhow!(
@@ -240,9 +242,9 @@ impl WeatherEnricher {
             ));
         }
 
-        let parsed: ArchiveResponse = response.json().map_err(|e| {
-            anyhow!("failed to parse weather range response for {location:?}: {e}")
-        })?;
+        let parsed: ArchiveResponse = response
+            .json()
+            .map_err(|e| anyhow!("failed to parse weather range response for {location:?}: {e}"))?;
 
         let n = parsed.hourly.time.len();
         let mut out = Vec::with_capacity(n);
@@ -257,7 +259,13 @@ impl WeatherEnricher {
                 // fabricating a value.
                 continue;
             };
-            let weather_code = parsed.hourly.weather_code.get(i).copied().flatten().unwrap_or(-1);
+            let weather_code = parsed
+                .hourly
+                .weather_code
+                .get(i)
+                .copied()
+                .flatten()
+                .unwrap_or(-1);
 
             out.push(EnrichedData {
                 location: location.to_string(),

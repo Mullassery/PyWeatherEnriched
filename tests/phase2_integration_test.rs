@@ -4,8 +4,8 @@
 #[cfg(test)]
 mod phase2_tests {
     use pyweatherenriched::{
-        ParallelEnricher, BatchResolver, StreamingReader, StreamingWriter,
-        DatabaseConfig, DatabaseType,
+        BatchResolver, DatabaseConfig, DatabaseType, ParallelEnricher, StreamingReader,
+        StreamingWriter,
     };
 
     #[test]
@@ -30,7 +30,7 @@ mod phase2_tests {
         let resolver = BatchResolver::new(5.0, 1000);
 
         let locations = vec![
-            "NYC", "NYC", "NYC", "LA", "LA", "Chicago", "Chicago", "Chicago", "Chicago"
+            "NYC", "NYC", "NYC", "LA", "LA", "Chicago", "Chicago", "Chicago", "Chicago",
         ]
         .into_iter()
         .map(|s| s.to_string())
@@ -120,7 +120,10 @@ mod phase2_tests {
 
         // Expected Phase 2 improvement: 5x speedup = 36 seconds for 3M rows
         let expected_parallel_time = sequential_time_seconds / 5.0;
-        assert!(expected_parallel_time < 60.0, "Phase 2 should process in <60 seconds");
+        assert!(
+            expected_parallel_time < 60.0,
+            "Phase 2 should process in <60 seconds"
+        );
     }
 
     #[test]

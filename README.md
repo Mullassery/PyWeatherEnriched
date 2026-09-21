@@ -196,7 +196,7 @@ git clone https://github.com/Mullassery/PyWeatherEnriched.git
 cd PyWeatherEnriched
 
 maturin develop --release   # build the Rust extension + install editable
-cargo test --lib            # Rust unit tests (32 tests)
+cargo test --lib            # Rust unit tests (39 tests, verified passing 2026-09)
 pip install -e ".[dev]"
 pytest tests/ -v            # Python tests (33 tests, incl. live-network ones)
 ```

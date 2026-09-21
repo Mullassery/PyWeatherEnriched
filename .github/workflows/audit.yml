@@ -1,0 +1,31 @@
+name: Dependency Audit
+on:
+  push:
+    branches: [master]
+  pull_request:
+  schedule:
+    # Weekly, so newly-disclosed advisories are caught even with no code changes.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  cargo-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: rustsec/audit-check@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  pip-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install project + dev dependencies
+        run: pip install -e ".[dev]" pip-audit
+      - name: pip-audit (scans the environment just installed above)
+        run: pip-audit
