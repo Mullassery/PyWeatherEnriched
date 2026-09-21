@@ -33,7 +33,7 @@ anyhow = "1.0"
 lru = "0.12"
 rusqlite = { version = "0.31", features = ["bundled", "chrono"] }
 clap = { version = "4.4", features = ["derive"] }
-toml = "0.8"
+toml = "1.1"
 
 [[bin]]
 name = "pyweatherenriched-validate"
