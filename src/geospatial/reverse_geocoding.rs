@@ -247,7 +247,9 @@ impl ReverseGeocodingService {
         longitude: f64,
         detail_level: OutputDetailLevel,
     ) -> Result<String> {
+        let started_at = std::time::Instant::now();
         let full_result = self.reverse_geocode(latitude, longitude)?;
+        let processing_time_ms = started_at.elapsed().as_millis() as u64;
 
         let output = match detail_level {
             OutputDetailLevel::Minimal => serde_json::to_string(&MinimalReverseGeocodeResult {
@@ -286,7 +288,7 @@ impl ReverseGeocodingService {
                     primary: full_result,
                     alternatives: Vec::new(), // TODO: Get alternatives from multiple sources
                     sources_tried: vec!["osm".to_string()],
-                    processing_time_ms: 0, // TODO: Track timing
+                    processing_time_ms,
                 })?
             }
         };

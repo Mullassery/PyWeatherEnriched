@@ -394,7 +394,10 @@ impl EnhancedCache {
 
     /// Get cache statistics
     pub fn stats(&self) -> CacheStats {
-        self.stats.lock().unwrap().clone()
+        self.stats
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .clone()
     }
 
     /// Clear expired entries from database

@@ -15,6 +15,42 @@ see `ROADMAP_HONEST.md` for detail.
 ## [Unreleased]
 
 ### Fixed
+- `src/enhanced_cache.rs:397`: `EnhancedCache::stats()` used
+  `self.stats.lock().unwrap()`, which would panic on top of a prior panic
+  if the mutex were ever poisoned. Changed to
+  `.unwrap_or_else(|poisoned| poisoned.into_inner())`, matching the
+  established pattern in sibling repos, so a poisoned lock degrades
+  gracefully instead of taking down the caller. Verified with
+  `cargo test --lib` (39/39) and the `pytest` `TestEnhancedCache` suite.
+- `tests/phase2_integration_test.rs` (deleted): this integration test
+  imported `ParallelEnricher`, `BatchResolver`, `StreamingReader`,
+  `StreamingWriter`, `DatabaseConfig`, `DatabaseType` from crate root,
+  none of which are exported (the source files that define them are not
+  declared as `mod`s in `src/lib.rs` — see "Orphaned source files" in
+  `ROADMAP_HONEST.md`). This made plain `cargo test` (without `--lib`)
+  fail to compile entirely. Deleted the stale test file only — the
+  underlying orphaned modules it referenced are untouched and still need
+  a real wire-up-or-delete decision. Verified `cargo test` (no `--lib`)
+  now compiles and passes (39 lib tests + 0 bin/doc tests).
+- `src/geospatial/reverse_geocoding.rs:289`: `processing_time_ms` in
+  `CompleteReverseGeocodeResponse` was hardcoded to `0` with a `// TODO:
+  Track timing`. Now measured for real with `std::time::Instant` around
+  the `reverse_geocode` call in `reverse_geocode_with_detail`. Verified
+  with the existing `geospatial::reverse_geocoding` unit tests (still
+  39/39 passing under `cargo test --lib`). Note: `alternatives: Vec::new()`
+  at line 287 (same struct) was **not** fixed — real alternatives would
+  require additional geocoding sources (Google/USPS), which are
+  deliberately unimplemented stubs (`src/geospatial/optional.rs`); that's
+  a real feature gap, not a contained bug, and is left documented in
+  `ROADMAP_HONEST.md`.
+- Re-verified PyPI publish is still broken: the most recent tagged
+  release run (`v0.6.0`, `gh run view 31983879736`) still fails at the
+  `publish` job with `403 Invalid or non-existent authentication
+  information` from `https://upload.pypi.org/legacy/`, and
+  `.github/workflows/release.yml` is unchanged from the state
+  `ROADMAP_HONEST.md` describes (`secrets.PYPI_API_TOKEN`, no
+  `if: always()` on the GitHub Release step). No fix attempted — rotating
+  the token requires repo secret access this pass doesn't have.
 - `pyproject.toml`: bumped the `dev` extra's `pytest` floor from `>=7.0`
   to `>=9.0.3` — `pip-audit` found the old floor resolving to `pytest
   8.4.2`, which has a known, real vulnerability (`PYSEC-2026-1845`,

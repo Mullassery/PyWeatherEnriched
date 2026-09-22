@@ -2,8 +2,9 @@
 
 This document is deliberately blunt. No "planned"/"may be added" hedging —
 if something is broken or missing, it says so plainly. Last verified
-2026-09-21 by running the actual test/build/lint/audit commands listed
-below on this machine.
+2026-09-22 by running the actual test/build/lint/audit commands listed
+below on this machine (a quick-fix pass following up on the 2026-09-21
+audit; see `CHANGELOG.md`'s `[Unreleased]` section for what changed).
 
 ## 1. Works, and I verified it myself
 
@@ -65,16 +66,16 @@ below on this machine.
   certainly meant to be `v0.2.0`, not `v2.0.0`. Left as-is (not deleting
   a pushed tag without being asked), but anyone consuming tags/releases
   should be aware `v2.0.0` does not mean what it looks like it means.
-- **`cargo test` (without `--lib`) does not compile.**
-  `tests/phase2_integration_test.rs` imports `ParallelEnricher`,
+- ~~**`cargo test` (without `--lib`) does not compile.**~~ **Fixed**:
+  `tests/phase2_integration_test.rs` (which imported `ParallelEnricher`,
   `BatchResolver`, `StreamingReader`, `StreamingWriter`,
   `DatabaseConfig`, `DatabaseType` from `pyweatherenriched` — none of
-  which are exported, because the source files that define them
+  which were ever exported, since the source files that define them are
+  not declared as `mod`s in `src/lib.rs`) has been deleted. Plain
+  `cargo test` now compiles and passes. The underlying orphaned modules
   (`src/parallel.rs`, `src/batch_resolver.rs`, `src/streaming_io.rs`,
-  `src/database.rs`) are **not declared as `mod`s anywhere in
-  `src/lib.rs`**. They exist on disk, are never compiled into the crate,
-  and the integration test referencing them is dead and broken. See
-  "Orphaned source files" below.
+  `src/database.rs`, etc.) themselves are untouched — see "Orphaned
+  source files" below, still needs a real wire-up-or-delete decision.
 
 ## 4. Not built / deliberately unimplemented
 
@@ -97,23 +98,29 @@ never touch them at all:
 
 | File | Lines | Referenced by |
 |---|---|---|
-| `src/batch_resolver.rs` | 175 | only the broken `tests/phase2_integration_test.rs` |
+| `src/batch_resolver.rs` | 175 | nothing |
 | `src/cloud_storage.rs` | 300 | nothing |
-| `src/database.rs` | 270 | only the broken integration test |
+| `src/database.rs` | 270 | nothing |
 | `src/distributed_processing.rs` | 300 | nothing |
 | `src/geospatial_connectors.rs` | 365 | nothing |
-| `src/parallel.rs` | 79 | only the broken integration test |
-| `src/streaming_io.rs` | 142 | only the broken integration test |
+| `src/parallel.rs` | 79 | nothing |
+| `src/streaming_io.rs` | 142 | nothing |
 
 These were never removed after being superseded/abandoned, and a
 contributor grepping `src/` would reasonably assume they're live code.
+**Update (this pass)**: the stale, non-compiling `tests/
+phase2_integration_test.rs` that referenced these modules has been
+deleted (it broke plain `cargo test`; see "Fixed" in `CHANGELOG.md`), so
+these seven files are now referenced by nothing at all, anywhere in the
+repo — not even a broken test. The wire-up-or-delete decision on the
+modules themselves is unchanged and still not made.
 **Recommendation for a dedicated follow-up session**: either (a) actually
 wire the useful ones (`parallel.rs`, `batch_resolver.rs` look closest to
-reusable) into `lib.rs` with real tests and delete the rest, or (b)
-delete all seven plus `tests/phase2_integration_test.rs` outright. Do not
-leave them as-is — they inflate the codebase's apparent surface area by
-~65% (1,631 dead lines vs. ~1,893 lines of real, compiled, wired
-non-test Rust) with things reviewers/contributors may quote as real.
+reusable) into `lib.rs` with real tests, or (b) delete all seven
+outright. Do not leave them as-is — they inflate the codebase's apparent
+surface area by ~65% (1,631 dead lines vs. ~1,893 lines of real,
+compiled, wired non-test Rust) with things reviewers/contributors may
+quote as real.
 
 ### Dependency staleness — real version gaps checked against the live crates.io index (2026-09-21), not guessed
 `Cargo.toml`'s version requirements act as a ceiling `cargo update` won't
@@ -165,20 +172,24 @@ new floor and it reports "No known vulnerabilities found", and the full
 9.1.1`.
 
 ### Minor code-quality items
-- `src/enhanced_cache.rs:397` — `self.stats.lock().unwrap()`: a poisoned
-  mutex (e.g. a prior panic while holding the lock) will panic here too,
-  rather than degrading gracefully. Standard Rust pattern, low severity,
-  not fixed in this pass — noted for anyone hardening this path.
+- ~~`src/enhanced_cache.rs:397` — `self.stats.lock().unwrap()`~~ **Fixed**:
+  changed to `.unwrap_or_else(|poisoned| poisoned.into_inner())` so a
+  poisoned mutex degrades gracefully instead of panicking again. Verified
+  with `cargo test --lib` and `pytest`.
 - `src/geospatial/reverse_geocoding.rs:287` — `alternatives: Vec::new()`
-  with a `// TODO: Get alternatives from multiple sources` — the real,
-  tested reverse-geocoding logic always returns zero alternative matches;
-  the field exists in the output type but is never actually populated.
-- `src/geospatial/reverse_geocoding.rs:289` — `processing_time_ms: 0`
-  with a `// TODO: Track timing` — same story, a field that always reads
-  zero rather than a real measurement.
+  with a `// TODO: Get alternatives from multiple sources` — still not
+  fixed. Real alternatives would require additional geocoding sources
+  (Google/USPS), which are deliberately unimplemented stubs
+  (`src/geospatial/optional.rs`) — this is a real feature gap, not a
+  contained bug, so it's left as-is.
+- ~~`src/geospatial/reverse_geocoding.rs:289` — `processing_time_ms: 0`~~
+  **Fixed**: now measured for real with `std::time::Instant` around the
+  `reverse_geocode` call in `reverse_geocode_with_detail`. Verified with
+  the existing `geospatial::reverse_geocoding` unit tests.
 - Both of the above are inside the dead-code-gated `geospatial` module
-  (see section 2), so they have no user-facing impact today, but would
-  need addressing before that module is ever wired up for real.
+  (see section 2), so neither has user-facing impact today, but the
+  remaining `alternatives` gap would need addressing before that module
+  is ever wired up for real.
 
 ### CI/process gaps found and fixed in this pass
 - `.github/workflows/tests.yml` ran **only** `pytest` — there was no CI
