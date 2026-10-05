@@ -18,7 +18,7 @@ crate-type = ["cdylib", "rlib"]
 # that supplies libpython's symbols at runtime the way a real extension
 # module is. maturin enables it explicitly for wheel builds (see
 # pyproject.toml's [tool.maturin] features).
-pyo3 = { version = "0.23", features = ["abi3-py310"] }
+pyo3 = { version = "0.29", features = ["abi3-py310"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 # rustls instead of the default OpenSSL/native-tls backend: pure Rust, no
