@@ -1,5 +1,7 @@
 # PyWeatherEnriched
 
+[![Grapify](https://img.shields.io/badge/Grapify-Code%20Scan-purple)](https://grapify.ai)
+
 Real geocoding + real historical weather, wired into a Rust core with
 pandas/numpy climate feature engineering on top.
 
