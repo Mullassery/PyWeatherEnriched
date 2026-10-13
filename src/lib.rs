@@ -62,7 +62,7 @@ impl PyWeatherEnricher {
         location: String,
         timestamp: String,
         py: Python,
-    ) -> PyResult<PyObject> {
+    ) -> PyResult<Py<PyAny>> {
         match self.inner.enrich(&location, &timestamp) {
             Ok(result) => {
                 let dict = pyo3::types::PyDict::new(py);
@@ -81,7 +81,7 @@ impl PyWeatherEnricher {
         }
     }
 
-    fn enrich_batch(&mut self, rows: Vec<(String, String)>, py: Python) -> PyResult<PyObject> {
+    fn enrich_batch(&mut self, rows: Vec<(String, String)>, py: Python) -> PyResult<Py<PyAny>> {
         let mut results = Vec::new();
         for (location, timestamp) in rows {
             match self.inner.enrich(&location, &timestamp) {
@@ -107,7 +107,7 @@ impl PyWeatherEnricher {
         Ok(pyo3::types::PyList::new(py, &results)?.into())
     }
 
-    fn cache_stats(&self, py: Python) -> PyResult<PyObject> {
+    fn cache_stats(&self, py: Python) -> PyResult<Py<PyAny>> {
         let dict = pyo3::types::PyDict::new(py);
         let stats = self.inner.cache_stats();
         dict.set_item("hits", stats.0)?;
@@ -126,12 +126,12 @@ impl PyWeatherEnricher {
         start_date: String,
         end_date: String,
         py: Python,
-    ) -> PyResult<PyObject> {
+    ) -> PyResult<Py<PyAny>> {
         match self.inner.enrich_range(&location, &start_date, &end_date) {
             Ok(results) => {
-                let rows: Vec<PyObject> = results
+                let rows: Vec<Py<PyAny>> = results
                     .into_iter()
-                    .map(|result| -> PyResult<PyObject> {
+                    .map(|result| -> PyResult<Py<PyAny>> {
                         let dict = pyo3::types::PyDict::new(py);
                         dict.set_item("location", result.location)?;
                         dict.set_item("latitude", result.latitude)?;
@@ -272,7 +272,7 @@ impl PyEnhancedCache {
         longitude: f64,
         timestamp: String,
         py: Python,
-    ) -> PyResult<Option<PyObject>> {
+    ) -> PyResult<Option<Py<PyAny>>> {
         match self.inner.get(&location, latitude, longitude, &timestamp) {
             Some(data) => {
                 let dict = pyo3::types::PyDict::new(py);
@@ -332,7 +332,7 @@ impl PyEnhancedCache {
         start: String,
         end: String,
         py: Python,
-    ) -> PyResult<Vec<PyObject>> {
+    ) -> PyResult<Vec<Py<PyAny>>> {
         let start_dt = chrono::DateTime::parse_from_rfc3339(&start)
             .map_err(|e| {
                 pyo3::exceptions::PyValueError::new_err(format!(
@@ -372,7 +372,7 @@ impl PyEnhancedCache {
         Ok((missing, hits))
     }
 
-    fn stats(&self, py: Python) -> PyResult<PyObject> {
+    fn stats(&self, py: Python) -> PyResult<Py<PyAny>> {
         let s = self.inner.stats();
         let dict = pyo3::types::PyDict::new(py);
         dict.set_item("hits", s.hits)?;
