@@ -156,7 +156,7 @@ impl PyWeatherEnricher {
 /// methods return — useful when callers want an object with named
 /// attributes (e.g. to build one up field-by-field) rather than a dict
 /// literal.
-#[pyclass(name = "EnrichedRow")]
+#[pyclass(from_py_object, name = "EnrichedRow")]
 #[derive(Clone)]
 pub struct PyEnrichedRow {
     #[pyo3(get)]

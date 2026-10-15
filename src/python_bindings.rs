@@ -10,7 +10,7 @@
 
 use pyo3::prelude::*;
 
-#[pyclass(name = "EnrichmentBuilder")]
+#[pyclass(from_py_object, name = "EnrichmentBuilder")]
 #[derive(Clone)]
 pub struct EnrichmentBuilder {
     cache_size: usize,
