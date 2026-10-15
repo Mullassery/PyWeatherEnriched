@@ -48,7 +48,13 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=9.0.3"]  # >=9.0.3 to avoid PYSEC-2026-1845 (see ROADMAP_HONEST.md)
+dev = [
+    "pytest>=9.0.3",  # >=9.0.3 to avoid PYSEC-2026-1845 (see ROADMAP_HONEST.md)
+    # The runner's bundled setuptools is 79.0.1, which pip-audit flags for
+    # PYSEC-2026-3447 (fixed in 83.0.0). Pin the floor so the audit job's
+    # `pip install -e ".[dev]"` upgrades it before pip-audit scans.
+    "setuptools>=83.0.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/Mullassery/PyWeatherEnriched"
