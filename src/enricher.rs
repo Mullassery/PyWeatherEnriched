@@ -81,28 +81,28 @@ pub struct WeatherEnricher {
 }
 
 impl WeatherEnricher {
-    pub fn new(cache_size: usize) -> Self {
-        Self::with_urls(
-            Geocoder::new().expect("failed to build geocoder HTTP client"),
-            ARCHIVE_API_URL.to_string(),
-            cache_size,
-        )
+    pub fn new(cache_size: usize) -> Result<Self> {
+        Self::with_urls(Geocoder::new()?, ARCHIVE_API_URL.to_string(), cache_size)
     }
 
     /// For tests: inject a geocoder and archive-API base URL pointing at a mock server.
-    pub fn with_urls(geocoder: Geocoder, archive_url: String, cache_size: usize) -> Self {
-        WeatherEnricher {
+    pub fn with_urls(
+        geocoder: Geocoder,
+        archive_url: String,
+        cache_size: usize,
+    ) -> Result<Self> {
+        let client = reqwest::blocking::Client::builder()
+            .timeout(std::time::Duration::from_secs(15))
+            .build()?;
+        Ok(WeatherEnricher {
             geocoder,
-            client: reqwest::blocking::Client::builder()
-                .timeout(std::time::Duration::from_secs(15))
-                .build()
-                .expect("failed to build HTTP client"),
+            client,
             archive_url,
             cache: Mutex::new(HashMap::new()),
             cache_capacity: cache_size.max(1),
             hits: Mutex::new(0),
             misses: Mutex::new(0),
-        }
+        })
     }
 
     pub fn enrich(&self, location: &str, timestamp: &str) -> Result<EnrichedData> {
@@ -311,7 +311,7 @@ mod tests {
 
     fn enricher_with_mock(server_url: String) -> WeatherEnricher {
         let geocoder = Geocoder::with_base_url(server_url.clone()).unwrap();
-        WeatherEnricher::with_urls(geocoder, server_url, 100)
+        WeatherEnricher::with_urls(geocoder, server_url, 100).unwrap()
     }
 
     #[test]

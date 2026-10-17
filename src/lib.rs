@@ -51,10 +51,10 @@ pub struct PyWeatherEnricher {
 impl PyWeatherEnricher {
     #[new]
     #[pyo3(signature = (cache_size=None))]
-    fn new(cache_size: Option<usize>) -> Self {
-        PyWeatherEnricher {
-            inner: WeatherEnricher::new(cache_size.unwrap_or(1000)),
-        }
+    fn new(cache_size: Option<usize>) -> PyResult<Self> {
+        let inner = WeatherEnricher::new(cache_size.unwrap_or(1000))
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+        Ok(PyWeatherEnricher { inner })
     }
 
     fn enrich_row(

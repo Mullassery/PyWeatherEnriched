@@ -40,7 +40,13 @@ fn main() {
     println!("  location:  {}", args.location);
     println!("  timestamp: {}", args.timestamp);
 
-    let enricher = WeatherEnricher::new(args.cache_size);
+    let enricher = match WeatherEnricher::new(args.cache_size) {
+        Ok(enricher) => enricher,
+        Err(e) => {
+            eprintln!("FAILED: {e}");
+            std::process::exit(1);
+        }
+    };
 
     match enricher.enrich(&args.location, &args.timestamp) {
         Ok(data) => {

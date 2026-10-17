@@ -11,7 +11,11 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 
 const NOMINATIM_URL: &str = "https://nominatim.openstreetmap.org/search";
-const USER_AGENT: &str = "pyweatherenriched/0.4 (weather data enrichment; contact via GitHub)";
+const USER_AGENT: &str = concat!(
+    "pyweatherenriched/",
+    env!("CARGO_PKG_VERSION"),
+    " (weather data enrichment; contact via GitHub)"
+);
 
 #[derive(Debug, Deserialize)]
 struct NominatimResult {
@@ -156,5 +160,13 @@ mod tests {
         let result = geocoder.geocode("Nowhereville, Atlantis");
 
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_user_agent_tracks_crate_version() {
+        assert!(
+            USER_AGENT.contains(env!("CARGO_PKG_VERSION")),
+            "User-Agent {USER_AGENT:?} should embed the crate version"
+        );
     }
 }

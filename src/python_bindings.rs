@@ -29,7 +29,7 @@ impl EnrichmentBuilder {
     }
 
     /// Build a configured `WeatherEnricher`.
-    fn build(&self) -> crate::PyWeatherEnricher {
+    fn build(&self) -> PyResult<crate::PyWeatherEnricher> {
         crate::PyWeatherEnricher::new(Some(self.cache_size))
     }
 
