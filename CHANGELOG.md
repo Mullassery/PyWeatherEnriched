@@ -84,5 +84,10 @@ see `ROADMAP_HONEST.md` for detail.
   on push/PR/weekly schedule.
 - `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `ROADMAP_HONEST.md` (new).
 
+## [0.7.1] - 2026-10-17
+
+### Fixed
+- Audit remediation: security hardening, correctness fixes, and lint/CI gates.
+
 ## Earlier history (not itemized — see git log / git tags)
 `v0.1.0` → `v0.6.0`, and the current in-progress `0.7.0`.
