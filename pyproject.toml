@@ -48,6 +48,8 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
+# Embedded architecture/knowledge-graph engine behind tools/codeatlas.
+architecture = ["codeatlas-rs>=0.3.0"]
 dev = [
     "pytest>=9.0.3",  # >=9.0.3 to avoid PYSEC-2026-1845 (see ROADMAP_HONEST.md)
     # The runner's bundled setuptools is 79.0.1, which pip-audit flags for

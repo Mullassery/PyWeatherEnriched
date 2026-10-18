@@ -30,4 +30,4 @@ env/
 .env
 .env.local
 
-graphify-out/
+codeatlas-out/
