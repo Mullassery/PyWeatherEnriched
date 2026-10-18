@@ -86,11 +86,7 @@ impl WeatherEnricher {
     }
 
     /// For tests: inject a geocoder and archive-API base URL pointing at a mock server.
-    pub fn with_urls(
-        geocoder: Geocoder,
-        archive_url: String,
-        cache_size: usize,
-    ) -> Result<Self> {
+    pub fn with_urls(geocoder: Geocoder, archive_url: String, cache_size: usize) -> Result<Self> {
         let client = reqwest::blocking::Client::builder()
             .timeout(std::time::Duration::from_secs(15))
             .build()?;

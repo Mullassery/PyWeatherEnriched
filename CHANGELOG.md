@@ -84,6 +84,11 @@ see `ROADMAP_HONEST.md` for detail.
   on push/PR/weekly schedule.
 - `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `ROADMAP_HONEST.md` (new).
 
+## [0.7.2] - 2026-10-18
+
+### Fixed
+- Format Rust sources with `cargo fmt` to satisfy CI format gate (RECHECK-034).
+
 ## [0.7.1] - 2026-10-17
 
 ### Fixed
