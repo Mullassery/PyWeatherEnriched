@@ -229,6 +229,11 @@ Open-Meteo baseline for the same coordinates/timestamps (rounding only).
 - [CHANGELOG.md](CHANGELOG.md) — release history.
 - [docs/](docs/) — additional documentation.
 
+## Queue status
+
+Shipped, blocked/failed, and rejected work for this repository is documented in
+[`QUEUE_STATUS.md`](QUEUE_STATUS.md).
+
 ## Contributing
 
 ```bash
