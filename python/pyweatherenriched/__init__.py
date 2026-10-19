@@ -20,6 +20,8 @@ from pyweatherenriched._pyweatherenriched import (
     EnrichmentBuilder,
     WeatherEnricher,
     __version__,
+    lapse_rate_adjustment,
+    terrain_roughness,
 )
 
 from pyweatherenriched import features
@@ -38,6 +40,8 @@ __all__ = [
     "EnhancedCache",
     "CacheStats",
     "EnrichmentBuilder",
+    "lapse_rate_adjustment",
+    "terrain_roughness",
     "features",
     "enrich_dataframe",
     "add_rolling_features",

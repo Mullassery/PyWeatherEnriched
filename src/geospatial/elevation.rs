@@ -64,27 +64,14 @@ impl ElevationService {
     /// Standard lapse rate: -0.65°C per 100m
     /// Reference altitude: sea level (0m)
     fn calculate_lapse_rate(&self, elevation_m: f32) -> f32 {
-        const LAPSE_RATE: f32 = -0.0065; // °C per meter
-        elevation_m * LAPSE_RATE
+        lapse_rate_adjustment_c(elevation_m)
     }
 
     /// Calculate terrain roughness for wind modeling
     /// Rougher terrain (mountains) = higher roughness
     /// Flat terrain = lower roughness
     fn calculate_roughness(&self, elevation_m: f32) -> f32 {
-        // Simple model: higher elevation = more exposed = lower roughness
-        // Lower elevation = valleys/sheltered = higher roughness (but for wind, roughness is buildings/trees, not terrain)
-
-        // For pure terrain:
-        // - High mountains (>2000m): z0 ≈ 0.5m (rocky, sparse vegetation)
-        // - Low hills (500-2000m): z0 ≈ 0.2m
-        // - Flat terrain (0-500m): z0 ≈ 0.1m (grassland)
-
-        match elevation_m {
-            elev if elev > 2000.0 => 0.5,
-            elev if elev > 500.0 => 0.2,
-            _ => 0.1,
-        }
+        terrain_roughness(elevation_m)
     }
 
     /// Get tile ID from coordinates
@@ -379,5 +366,46 @@ mod tests {
 
         let result = service.load_elevation_from_tile(39.9, -74.9, "39_-75");
         assert!(result.is_err());
+    }
+}
+
+
+/// Standard temperature lapse-rate adjustment relative to sea level.
+///
+/// `-0.65°C` per 100 m (`-0.0065°C/m`). Pure function; no elevation data
+/// source required.
+pub fn lapse_rate_adjustment_c(elevation_m: f32) -> f32 {
+    const LAPSE_RATE: f32 = -0.0065; // °C per meter
+    elevation_m * LAPSE_RATE
+}
+
+/// Simple terrain-roughness model for wind exposure.
+///
+/// - `> 2000 m`: `0.5` (rocky, sparse vegetation)
+/// - `> 500 m`: `0.2` (low hills)
+/// - otherwise: `0.1` (flat/grassland)
+pub fn terrain_roughness(elevation_m: f32) -> f32 {
+    match elevation_m {
+        elev if elev > 2000.0 => 0.5,
+        elev if elev > 500.0 => 0.2,
+        _ => 0.1,
+    }
+}
+
+#[cfg(test)]
+mod helper_tests {
+    use super::*;
+
+    #[test]
+    fn lapse_rate_is_minus_6_5c_per_km() {
+        assert!((lapse_rate_adjustment_c(1000.0) + 6.5).abs() < 1e-5);
+        assert_eq!(lapse_rate_adjustment_c(0.0), 0.0);
+    }
+
+    #[test]
+    fn roughness_buckets() {
+        assert_eq!(terrain_roughness(100.0), 0.1);
+        assert_eq!(terrain_roughness(1000.0), 0.2);
+        assert_eq!(terrain_roughness(2500.0), 0.5);
     }
 }

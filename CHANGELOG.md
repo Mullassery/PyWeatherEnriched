@@ -84,6 +84,12 @@ see `ROADMAP_HONEST.md` for detail.
   on push/PR/weekly schedule.
 - `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `ROADMAP_HONEST.md` (new).
 
+## [Unreleased]
+
+### Added
+- `lapse_rate_adjustment()` / `terrain_roughness()` exposed from the Rust geospatial core;
+  covered by Rust and Python tests.
+
 ## [0.7.2] - 2026-10-18
 
 ### Fixed

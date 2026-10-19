@@ -31,6 +31,18 @@ pub use python_bindings::EnrichmentBuilder;
 // this native submodule, giving the package a normal mixed Rust/Python
 // (maturin) layout instead of the native module masquerading as the
 // top-level package.
+/// Sea-level temperature adjustment for an elevation (`-0.65°C` per 100 m).
+#[pyfunction]
+fn lapse_rate_adjustment(elevation_m: f64) -> f64 {
+    geospatial::elevation::lapse_rate_adjustment_c(elevation_m as f32) as f64
+}
+
+/// Terrain roughness bucket for wind exposure at an elevation.
+#[pyfunction]
+fn terrain_roughness(elevation_m: f64) -> f64 {
+    geospatial::elevation::terrain_roughness(elevation_m as f32) as f64
+}
+
 #[pymodule]
 fn _pyweatherenriched(_py: Python, m: &pyo3::Bound<pyo3::types::PyModule>) -> PyResult<()> {
     m.add_class::<PyWeatherEnricher>()?;
@@ -38,6 +50,8 @@ fn _pyweatherenriched(_py: Python, m: &pyo3::Bound<pyo3::types::PyModule>) -> Py
     m.add_class::<PyEnhancedCache>()?;
     m.add_class::<PyCacheStats>()?;
     m.add_class::<EnrichmentBuilder>()?;
+    m.add_function(wrap_pyfunction!(lapse_rate_adjustment, m)?)?;
+    m.add_function(wrap_pyfunction!(terrain_roughness, m)?)?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     Ok(())
 }

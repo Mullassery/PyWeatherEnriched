@@ -50,10 +50,10 @@ weather into an ML pipeline.
 - **Not a source of hyperlocal data beyond what Open-Meteo provides.** The package layers
   geocoding and feature engineering on top of the same public archive; it does not produce
   new weather measurements.
-- **Some Rust building blocks are not exposed to Python.** Elevation/lapse-rate adjustment
-  (real SRTM GeoTIFF parsing), urban-heat-island modeling (real OSM building-density
-  analysis), and OSM-based reverse geocoding are independently unit-tested but not yet wired
-  into the Python API. They live under `src/geospatial/`.
+- **Elevation helpers are exposed; other geospatial blocks are not.** `lapse_rate_adjustment()`
+  and `terrain_roughness()` are available from Python. SRTM elevation lookup, urban-heat-island
+  modeling, and OSM-based reverse geocoding are implemented and unit-tested but still not wired
+  into the Python API (`src/geospatial/`).
 - **Some layers are deliberately unimplemented.** Vegetation/NDVI, soil, and flood-risk
   layers, plus additional commercial reverse-geocoding provider backends, are framework
   stubs (`src/geospatial/optional.rs`) that return a clear "not yet implemented" error
