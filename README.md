@@ -229,6 +229,16 @@ Open-Meteo baseline for the same coordinates/timestamps (rounding only).
 - [CHANGELOG.md](CHANGELOG.md) — release history.
 - [docs/](docs/) — additional documentation.
 
+## Known issues and deferred work
+
+**Blocked / failed:**
+- Expose implemented Rust features; fix cargo-test build.
+
+**Rejected / deferred:**
+- Forecasts/realtime; thin wrapper.
+
+Full shipped/blocked/rejected detail: [`QUEUE_STATUS.md`](QUEUE_STATUS.md).
+
 ## Queue status
 
 Shipped, blocked/failed, and rejected work for this repository is documented in
