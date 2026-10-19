@@ -1,23 +1,23 @@
 //! Geospatial building blocks (elevation, urban heat island, reverse
 //! geocoding, pluggable data sources).
 //!
-//! Status: real, independently unit-tested logic, but **not yet wired into
-//! the public Python API** (`src/lib.rs`'s `#[pymodule]`) and not called
-//! from anywhere else in the crate. Treat this module as internal
-//! groundwork, not a shipped feature, until it has a `#[pyclass]`/
-//! `#[pymethods]` surface and an end-to-end Python test exercising it.
+//! Status: the pure elevation helpers and the local-file reverse-geocoding
+//! and UHI services are exposed through `src/geospatial/python_api.rs`.
+//! Tile-backed SRTM elevation lookup is still internal only.
 //!
 //! Layers:
 //! - Elevation (SRTM): temperature lapse rate, wind adjustment
 //! - Urban Heat Island (OSM): building density, UHI effect
+//! - Reverse geocoding (OSM): nearest-feature postal code/address
 //! - Optional (`optional.rs`, deliberately unimplemented framework stubs):
 //!   vegetation (NDVI), soil, flood risk, Google Maps / USPS reverse
-//!   geocoding
+//!   geocoding — not exposed to Python.
 
 pub mod config;
 pub mod data_source;
 pub mod elevation;
 pub mod optional;
+pub mod python_api;
 pub mod reverse_geocoding;
 pub mod urban_heat_island;
 

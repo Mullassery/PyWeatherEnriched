@@ -89,6 +89,15 @@ see `ROADMAP_HONEST.md` for detail.
 ### Added
 - `lapse_rate_adjustment()` / `terrain_roughness()` exposed from the Rust geospatial core;
   covered by Rust and Python tests.
+- `ReverseGeocoder(base_path, file_pattern="{lat}_{lon}.geojson", cache_enabled=True)` and
+  `UrbanHeatIsland(base_path, file_pattern="{lat}_{lon}.geojson")` exposed from Python.
+  They read real OSM GeoJSON tiles from an explicit local directory and raise
+  `FileNotFoundError`/`RuntimeError` when the tile is missing or lacks usable data;
+  coordinates outside valid ranges raise `ValueError`. Buildings density/UHI remains a
+  formula-based estimate from real OSM footprints, not an observation. Covered by Rust
+  wrapper tests and `tests/test_geospatial_services.py`. Still **not** exposed: SRTM
+  tile lookup, vegetation/soil/flood-risk layers, and commercial reverse-geocoding
+  providers (`src/geospatial/optional.rs`).
 
 ## [0.7.2] - 2026-10-18
 

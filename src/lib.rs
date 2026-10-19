@@ -7,13 +7,11 @@ mod geocoder;
 mod http_retry;
 mod python_bindings;
 mod types;
-// Elevation/UHI/reverse-geocoding/data-source building blocks. These are
-// real, independently unit-tested (see each submodule's `#[cfg(test)]`),
-// but are NOT wired into the public Python API below and NOT reachable
-// from anywhere else in the crate yet — so they're honestly `#[allow(dead_code)]`
-// rather than pretending to be shipped functionality. Do not describe this
-// module's features as available to Python users until it is actually
-// wired into a `#[pymodule]` class and covered by an end-to-end test.
+// Elevation/UHI/reverse-geocoding/data-source building blocks. The pure
+// elevation helpers plus the local-file reverse-geocoding and UHI services
+// are exposed to Python below (see `geospatial::python_api`); the tile-backed
+// SRTM lookup and the deliberately-unimplemented optional layers are not, so
+// `allow(dead_code)` stays to avoid pretending the rest is shipped.
 #[allow(dead_code)]
 mod geospatial;
 
@@ -21,6 +19,7 @@ pub use cache::Cache;
 pub use enhanced_cache::{CacheStats, DateRange, EnhancedCache, LocationProximity};
 pub use enricher::WeatherEnricher;
 pub use geocoder::Geocoder;
+pub use geospatial::python_api::{PyReverseGeocoder, PyUrbanHeatIsland};
 pub use python_bindings::EnrichmentBuilder;
 
 // The compiled name here (`_pyweatherenriched`) must match the last path
@@ -50,6 +49,8 @@ fn _pyweatherenriched(_py: Python, m: &pyo3::Bound<pyo3::types::PyModule>) -> Py
     m.add_class::<PyEnhancedCache>()?;
     m.add_class::<PyCacheStats>()?;
     m.add_class::<EnrichmentBuilder>()?;
+    m.add_class::<PyReverseGeocoder>()?;
+    m.add_class::<PyUrbanHeatIsland>()?;
     m.add_function(wrap_pyfunction!(lapse_rate_adjustment, m)?)?;
     m.add_function(wrap_pyfunction!(terrain_roughness, m)?)?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;

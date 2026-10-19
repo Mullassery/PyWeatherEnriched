@@ -369,7 +369,6 @@ mod tests {
     }
 }
 
-
 /// Standard temperature lapse-rate adjustment relative to sea level.
 ///
 /// `-0.65°C` per 100 m (`-0.0065°C/m`). Pure function; no elevation data

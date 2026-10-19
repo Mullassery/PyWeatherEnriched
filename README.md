@@ -50,10 +50,15 @@ weather into an ML pipeline.
 - **Not a source of hyperlocal data beyond what Open-Meteo provides.** The package layers
   geocoding and feature engineering on top of the same public archive; it does not produce
   new weather measurements.
-- **Elevation helpers are exposed; other geospatial blocks are not.** `lapse_rate_adjustment()`
-  and `terrain_roughness()` are available from Python. SRTM elevation lookup, urban-heat-island
-  modeling, and OSM-based reverse geocoding are implemented and unit-tested but still not wired
-  into the Python API (`src/geospatial/`).
+- **Geospatial building blocks are only partly exposed.** `lapse_rate_adjustment()`,
+  `terrain_roughness()`, `ReverseGeocoder`, and `UrbanHeatIsland` are available from
+  Python. The two classes read OSM GeoJSON tiles from a local directory you pass in;
+  they raise `FileNotFoundError`/`RuntimeError` when a tile is missing or has no usable
+  feature instead of fabricating an address or value. SRTM tile lookup itself is still
+  internal only.
+- **UHI is a model estimate, not an observation.** `UrbanHeatIsland` computes building
+  density/height from real OSM footprints and applies the project's documented formula;
+  it does not measure actual urban heat.
 - **Some layers are deliberately unimplemented.** Vegetation/NDVI, soil, and flood-risk
   layers, plus additional commercial reverse-geocoding provider backends, are framework
   stubs (`src/geospatial/optional.rs`) that return a clear "not yet implemented" error
@@ -64,10 +69,11 @@ weather into an ML pipeline.
 
 ## Project status
 
-**Beta.** Version 0.7.0. The Python-facing geocoding, historical weather, caching, and
-feature-engineering paths are real and tested against live network data; the extra Rust
-building blocks above are implemented but not yet exposed. Changes are tracked in
-[CHANGELOG.md](CHANGELOG.md); see also [`ROADMAP_HONEST.md`](ROADMAP_HONEST.md).
+**Beta.** Version 0.7.0. The Python-facing geocoding, historical weather, caching,
+feature-engineering, and local-tile reverse-geocoding/UHI paths are real and tested;
+the remaining Rust building blocks above are implemented but not exposed. Changes are
+tracked in [CHANGELOG.md](CHANGELOG.md); see also
+[`ROADMAP_HONEST.md`](ROADMAP_HONEST.md).
 
 ## Installation
 
@@ -213,6 +219,34 @@ print(f"hit ratio: {stats['hit_ratio']:.1%}")
 `get()` checks the memory tier, then the persistent tier (if `db_path` was given), then
 falls back to a proximity search; `get_range` only queries the persistent tier, so it always
 returns `[]` without `db_path`.
+
+### Local OSM reverse geocoding and UHI
+
+`ReverseGeocoder` and `UrbanHeatIsland` read OSM-derived GeoJSON tiles from a directory
+you provide. The default pattern is `{lat}_{lon}.geojson`, where `lat`/`lon` are
+`floor(latitude)`/`floor(longitude)` (e.g. `40_-74.geojson`):
+
+```python
+from pyweatherenriched import ReverseGeocoder, UrbanHeatIsland
+
+geocoder = ReverseGeocoder("/data/osm")
+geocoder.reverse_geocode(40.7128, -74.006)
+# {'postal_code': '10001', 'street_address': None, 'city': 'New York',
+#  'state': 'NY', 'country': 'US', 'country_code': 'US', ..., 'source': 'osm'}
+
+uhi = UrbanHeatIsland("/data/osm")
+uhi.get_uhi_data(40.7484, -73.9857)
+# {'building_density_percent': ..., 'average_building_height_m': ...,
+#  'uhi_effect_c': ..., 'location_type': ...}
+```
+
+Reverse geocoding returns the nearest feature's real OSM address properties (`confidence`
+decays with distance). `UrbanHeatIsland` is a formula-based estimate from real building
+footprint area/height, not a measured temperature. Both raise `FileNotFoundError` when the
+tile file is absent and `RuntimeError` when the tile has no usable feature/postal code;
+`ValueError` is raised for out-of-range coordinates. Optional vegetation/soil/flood layers
+and alternative commercial geocoding providers remain deliberately unimplemented and are
+not exposed.
 
 ### vs raw Open-Meteo
 
