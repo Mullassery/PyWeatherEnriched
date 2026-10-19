@@ -109,6 +109,25 @@ fresh.enrich_row("New York", "2024-06-15T12:00:00")  # cache hit
 print(fresh.cache_stats())  # {'hits': 1, 'misses': 1, 'size': 1}
 ```
 
+## Offline climate features
+
+Add climatological normals/anomalies and common indices without another
+network call:
+
+```python
+from pyweatherenriched.features import (
+    add_climate_normals, add_heat_index, add_growing_degree_days,
+)
+
+df = add_climate_normals(enriched_df, group_col="location")
+df = add_heat_index(df)
+df = add_growing_degree_days(df, base_c=10)
+```
+
+`add_climate_normals` computes a centered day-of-year normal per location
+(±15 days by default) and adds temperature normal/anomaly columns. Heat index
+and GDD are standard formulas; all functions are offline and deterministic.
+
 ## Usage
 
 ### Historical backfill

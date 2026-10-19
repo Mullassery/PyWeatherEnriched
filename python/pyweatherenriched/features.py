@@ -14,18 +14,18 @@ from.
 
 from __future__ import annotations
 
-from typing import Sequence
+from collections.abc import Sequence
 
 import numpy as np
 import pandas as pd
 
 __all__ = [
-    "enrich_dataframe",
-    "add_rolling_features",
-    "add_degree_days",
-    "add_cyclical_time_features",
     "add_anomaly_features",
+    "add_cyclical_time_features",
+    "add_degree_days",
+    "add_rolling_features",
     "build_features",
+    "enrich_dataframe",
 ]
 
 
@@ -274,3 +274,90 @@ def build_features(
     )
     out = add_anomaly_features(out, value_col=temp_col, group_col=group_col, baseline="expanding")
     return out
+
+
+def add_climate_normals(
+    df: pd.DataFrame,
+    value_col: str = "temperature",
+    timestamp_col: str = "timestamp",
+    *,
+    group_col: str | None = None,
+    window_days: int = 15,
+) -> pd.DataFrame:
+    """Add day-of-year climatological normals and anomalies.
+
+    The baseline is a centered rolling mean over ±``window_days`` of the
+    day-of-year mean, computed per group when ``group_col`` is given. This is
+    an offline, transparent normal — no external climate service is called.
+    """
+    if value_col not in df.columns or timestamp_col not in df.columns:
+        raise KeyError("value_col and timestamp_col must exist in the DataFrame")
+    out = df.copy()
+    out[timestamp_col] = pd.to_datetime(out[timestamp_col], utc=True, errors="coerce")
+    out["_doy"] = out[timestamp_col].dt.dayofyear
+    if group_col is not None and group_col not in out.columns:
+        raise KeyError(f"group_col {group_col!r} not found")
+    groups = [group_col] if group_col else []
+    daily = (
+        out.groupby(groups + ["_doy"], dropna=False)[value_col]
+        .mean()
+        .reset_index()
+        .sort_values(groups + ["_doy"])
+    )
+    window = max(1, int(window_days) * 2 + 1)
+    if groups:
+        normal = (
+            daily.groupby(groups, dropna=False)[value_col]
+            .transform(lambda s: s.rolling(window, center=True, min_periods=1).mean())
+        )
+    else:
+        normal = daily[value_col].rolling(window, center=True, min_periods=1).mean()
+    daily["_normal"] = normal
+    out = out.merge(daily[groups + ["_doy", "_normal"]], on=groups + ["_doy"], how="left")
+    out[f"{value_col}_normal"] = out["_normal"]
+    out[f"{value_col}_anomaly"] = out[value_col] - out["_normal"]
+    return out.drop(columns=["_doy", "_normal"])
+
+
+def add_heat_index(
+    df: pd.DataFrame,
+    temperature_col: str = "temperature",
+    humidity_col: str = "humidity",
+) -> pd.DataFrame:
+    """Add the Rothfusz heat index (°C) where temperature/humidity exist."""
+    if temperature_col not in df.columns or humidity_col not in df.columns:
+        raise KeyError("temperature_col and humidity_col must exist")
+    out = df.copy()
+    t = out[temperature_col].astype(float)
+    rh = out[humidity_col].astype(float).clip(0, 100)
+    tf = t * 9 / 5 + 32
+    hi = (
+        -42.379
+        + 2.04901523 * tf
+        + 10.14333127 * rh
+        - 0.22475541 * tf * rh
+        - 0.00683783 * tf * tf
+        - 0.05481717 * rh * rh
+        + 0.00122874 * tf * tf * rh
+        + 0.00085282 * tf * rh * rh
+        - 0.00000199 * tf * tf * rh * rh
+    )
+    out["heat_index_c"] = (hi - 32) * 5 / 9
+    return out
+
+
+def add_growing_degree_days(
+    df: pd.DataFrame,
+    temperature_col: str = "temperature",
+    *,
+    base_c: float = 10.0,
+) -> pd.DataFrame:
+    """Add daily growing degree days (max(temp - base, 0))."""
+    if temperature_col not in df.columns:
+        raise KeyError(f"{temperature_col!r} not found")
+    out = df.copy()
+    out[f"gdd_base{base_c:g}"] = (out[temperature_col].astype(float) - base_c).clip(lower=0)
+    return out
+
+
+__all__ += ["add_climate_normals", "add_growing_degree_days", "add_heat_index"]

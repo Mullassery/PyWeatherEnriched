@@ -3,7 +3,7 @@
 This file records what was shipped, what is blocked/failed, and what is rejected for this repository. It complements `AUDIT_FINDINGS.md`.
 
 ## Shipped
-- No code changes; audit/bundle docs added.
+- Offline climate indices: per-location normals/anomalies, heat index, and growing degree days; audit/bundle docs added.
 
 ## Blocked / failed
 - Expose implemented Rust features; fix cargo-test build.
