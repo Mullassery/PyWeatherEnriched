@@ -14,6 +14,10 @@ see `docs/internal/ROADMAP_HONEST.md` for detail.
 
 ## [Unreleased]
 
+### Removed
+- Deleted seven orphaned Rust source files (~1,631 lines) that were never
+  declared in `src/lib.rs`, compiled, tested, or exposed to Python.
+
 ### Fixed
 - `src/enhanced_cache.rs:397`: `EnhancedCache::stats()` used
   `self.stats.lock().unwrap()`, which would panic on top of a prior panic

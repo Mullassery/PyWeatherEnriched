@@ -91,36 +91,14 @@ for completeness, not as a problem.
 
 ## Technical debt (concrete, file:line)
 
-### Orphaned/dead source files — not compiled, not tested, actively misleading
-Seven files under `src/` total **1,631 lines** and are not referenced by
-any `mod` declaration in `src/lib.rs`, so `cargo build`/`cargo test --lib`
-never touch them at all:
-
-| File | Lines | Referenced by |
-|---|---|---|
-| `src/batch_resolver.rs` | 175 | nothing |
-| `src/cloud_storage.rs` | 300 | nothing |
-| `src/database.rs` | 270 | nothing |
-| `src/distributed_processing.rs` | 300 | nothing |
-| `src/geospatial_connectors.rs` | 365 | nothing |
-| `src/parallel.rs` | 79 | nothing |
-| `src/streaming_io.rs` | 142 | nothing |
-
-These were never removed after being superseded/abandoned, and a
-contributor grepping `src/` would reasonably assume they're live code.
-**Update (this pass)**: the stale, non-compiling `tests/
-phase2_integration_test.rs` that referenced these modules has been
-deleted (it broke plain `cargo test`; see "Fixed" in `CHANGELOG.md`), so
-these seven files are now referenced by nothing at all, anywhere in the
-repo — not even a broken test. The wire-up-or-delete decision on the
-modules themselves is unchanged and still not made.
-**Recommendation for a dedicated follow-up session**: either (a) actually
-wire the useful ones (`parallel.rs`, `batch_resolver.rs` look closest to
-reusable) into `lib.rs` with real tests, or (b) delete all seven
-outright. Do not leave them as-is — they inflate the codebase's apparent
-surface area by ~65% (1,631 dead lines vs. ~1,893 lines of real,
-compiled, wired non-test Rust) with things reviewers/contributors may
-quote as real.
+### Orphaned/dead source files — resolved
+The seven uncompiled, unreferenced files previously listed here
+(`batch_resolver.rs`, `cloud_storage.rs`, `database.rs`,
+`distributed_processing.rs`, `geospatial_connectors.rs`, `parallel.rs`,
+`streaming_io.rs`; 1,631 lines) have been deleted. They contained mock/
+placeholder implementations and were not wired into `lib.rs` or Python, so
+they appeared in the source tree without being reachable or tested. Git
+history retains them if any logic is worth revisiting.
 
 ### Dependency staleness — real version gaps checked against the live crates.io index (2026-09-21), not guessed
 `Cargo.toml`'s version requirements act as a ceiling `cargo update` won't
