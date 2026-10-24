@@ -36,7 +36,7 @@ geojson = { version = "1.0", default-features = false }
 chrono = { version = "0.4", features = ["serde"] }
 anyhow = "1.0"
 lru = "0.18"
-rusqlite = { version = "0.31", features = ["bundled", "chrono"] }
+rusqlite = { version = "0.40", features = ["bundled", "chrono"] }
 clap = { version = "4.4", features = ["derive"] }
 toml = "0.8"
 
