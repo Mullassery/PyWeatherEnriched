@@ -14,6 +14,10 @@ see `docs/internal/ROADMAP_HONEST.md` for detail.
 
 ## [Unreleased]
 
+### Changed
+- Refreshed the lockfile for `rustls-webpki`, `webpki-roots`, and `tokio`;
+  `cargo audit` is clean.
+
 ### Removed
 - Deleted seven orphaned Rust source files (~1,631 lines) that were never
   declared in `src/lib.rs`, compiled, tested, or exposed to Python.
