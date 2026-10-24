@@ -106,7 +106,7 @@ via `twine` at some point in the past — is actually live on PyPI today. The
 built wheels for every other platform exist only as CI build artifacts on
 a given workflow run, not on PyPI, until someone fixes the token and/or
 runs a manual `twine upload` (see the Manual Upload section above). See
-[ROADMAP_HONEST.md](ROADMAP_HONEST.md) for tracking.
+[docs/internal/ROADMAP_HONEST.md](docs/internal/ROADMAP_HONEST.md) for tracking.
 
 To create a release:
 ```bash

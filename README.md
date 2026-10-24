@@ -6,7 +6,6 @@
 [![PyPI](https://img.shields.io/pypi/v/pyweatherenriched)](https://pypi.org/project/pyweatherenriched/)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org)
 [![Tests](https://github.com/Mullassery/PyWeatherEnriched/actions/workflows/tests.yml/badge.svg)](https://github.com/Mullassery/PyWeatherEnriched/actions/workflows/tests.yml)
-[![Graphify](https://img.shields.io/badge/Graphify-knowledge%20graph-blue)](https://github.com/Graphify-Labs/graphify)
 
 ## What it is
 
@@ -73,7 +72,7 @@ weather into an ML pipeline.
 feature-engineering, and local-tile reverse-geocoding/UHI paths are real and tested;
 the remaining Rust building blocks above are implemented but not exposed. Changes are
 tracked in [CHANGELOG.md](CHANGELOG.md); see also
-[`ROADMAP_HONEST.md`](ROADMAP_HONEST.md).
+[`docs/internal/ROADMAP_HONEST.md`](docs/internal/ROADMAP_HONEST.md).
 
 ## Installation
 
@@ -278,7 +277,7 @@ Open-Meteo baseline for the same coordinates/timestamps (rounding only).
 ## Documentation
 
 - [BUILD.md](BUILD.md) — wheel-building/release details.
-- [ROADMAP_HONEST.md](ROADMAP_HONEST.md) — what's real, what's deferred, and why.
+- [docs/internal/ROADMAP_HONEST.md](docs/internal/ROADMAP_HONEST.md) — what's real, what's deferred, and why.
 - [CHANGELOG.md](CHANGELOG.md) — release history.
 - [docs/](docs/) — additional documentation.
 
@@ -290,7 +289,7 @@ Open-Meteo baseline for the same coordinates/timestamps (rounding only).
 **Rejected / deferred:**
 - Forecasts/realtime; thin wrapper.
 
-Full shipped/blocked/rejected detail: [`QUEUE_STATUS.md`](QUEUE_STATUS.md).
+Full shipped/blocked/rejected detail: [`docs/internal/QUEUE_STATUS.md`](docs/internal/QUEUE_STATUS.md).
 
 ## Contributing
 

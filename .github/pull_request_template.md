@@ -18,7 +18,7 @@ useful — say exactly what you ran and what the output was, e.g.:
 - [ ] `cargo clippy --lib -- -D warnings` passes
 - [ ] `cargo test --lib` passes
 - [ ] `pytest tests/ -v` passes
-- [ ] Updated `README.md` / `ROADMAP_HONEST.md` / `CHANGELOG.md` if this
+- [ ] Updated `README.md` / `../docs/internal/ROADMAP_HONEST.md` / `CHANGELOG.md` if this
       changes what they claim about the project's status
 - [ ] No fabricated/placeholder data introduced — unimplemented paths
       fail loudly with a clear error instead

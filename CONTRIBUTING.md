@@ -34,7 +34,7 @@ if they pass locally they should pass in CI.
 Note: plain `cargo test` (without `--lib`) does not compile —
 `tests/phase2_integration_test.rs` is a stale integration test referencing
 modules that were never wired into `src/lib.rs`. See
-[ROADMAP_HONEST.md](ROADMAP_HONEST.md) for the full story; use
+[docs/internal/ROADMAP_HONEST.md](docs/internal/ROADMAP_HONEST.md) for the full story; use
 `cargo test --lib` until that's resolved.
 
 Some Python tests (`TestWeatherEnricherLive` in
@@ -56,7 +56,7 @@ or rate-limits you.
 
 ## Honesty about status
 
-This project's docs (`README.md`, `ROADMAP_HONEST.md`) are intentionally
+This project's docs (`README.md`, `docs/internal/ROADMAP_HONEST.md`) are intentionally
 blunt about what's real, tested, broken, or unbuilt. If you add a
 feature, please describe it the same way: state plainly whether you
 tested it and how, rather than describing untested code as working. If
@@ -73,6 +73,6 @@ Use the GitHub issue templates
 ## Pull requests
 
 - Keep PRs focused — one logical change per PR.
-- Update `README.md`/`ROADMAP_HONEST.md`/`CHANGELOG.md` if your change
+- Update `README.md`/`docs/internal/ROADMAP_HONEST.md`/`CHANGELOG.md` if your change
   affects what they claim about the project's status.
 - Add or update tests for behavior you change.

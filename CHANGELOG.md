@@ -10,7 +10,7 @@ This file was introduced 2026-09-21. Version history before that point
 here, to avoid guessing at details that aren't confidently known from
 the commit history alone. Note also: git tag `v2.0.0` appears to be a
 tagging mistake (it points at the same commit as the "v0.2.0" release);
-see `ROADMAP_HONEST.md` for detail.
+see `docs/internal/ROADMAP_HONEST.md` for detail.
 
 ## [Unreleased]
 
@@ -27,7 +27,7 @@ see `ROADMAP_HONEST.md` for detail.
   `StreamingWriter`, `DatabaseConfig`, `DatabaseType` from crate root,
   none of which are exported (the source files that define them are not
   declared as `mod`s in `src/lib.rs` — see "Orphaned source files" in
-  `ROADMAP_HONEST.md`). This made plain `cargo test` (without `--lib`)
+  `docs/internal/ROADMAP_HONEST.md`). This made plain `cargo test` (without `--lib`)
   fail to compile entirely. Deleted the stale test file only — the
   underlying orphaned modules it referenced are untouched and still need
   a real wire-up-or-delete decision. Verified `cargo test` (no `--lib`)
@@ -42,13 +42,13 @@ see `ROADMAP_HONEST.md` for detail.
   require additional geocoding sources (Google/USPS), which are
   deliberately unimplemented stubs (`src/geospatial/optional.rs`); that's
   a real feature gap, not a contained bug, and is left documented in
-  `ROADMAP_HONEST.md`.
+  `docs/internal/ROADMAP_HONEST.md`.
 - Re-verified PyPI publish is still broken: the most recent tagged
   release run (`v0.6.0`, `gh run view 31983879736`) still fails at the
   `publish` job with `403 Invalid or non-existent authentication
   information` from `https://upload.pypi.org/legacy/`, and
   `.github/workflows/release.yml` is unchanged from the state
-  `ROADMAP_HONEST.md` describes (`secrets.PYPI_API_TOKEN`, no
+  `docs/internal/ROADMAP_HONEST.md` describes (`secrets.PYPI_API_TOKEN`, no
   `if: always()` on the GitHub Release step). No fix attempted — rotating
   the token requires repo secret access this pass doesn't have.
 - `pyproject.toml`: bumped the `dev` extra's `pytest` floor from `>=7.0`
@@ -82,7 +82,7 @@ see `ROADMAP_HONEST.md` for detail.
 - `.github/workflows/audit.yml`: a new dependency/vulnerability-scanning
   workflow (`cargo-audit` via `rustsec/audit-check`, plus `pip-audit`),
   on push/PR/weekly schedule.
-- `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `ROADMAP_HONEST.md` (new).
+- `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `docs/internal/ROADMAP_HONEST.md` (new).
 
 ## [Unreleased]
 
