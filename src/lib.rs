@@ -19,7 +19,9 @@ pub use cache::Cache;
 pub use enhanced_cache::{CacheStats, DateRange, EnhancedCache, LocationProximity};
 pub use enricher::WeatherEnricher;
 pub use geocoder::Geocoder;
-pub use geospatial::python_api::{PyReverseGeocoder, PyUrbanHeatIsland};
+pub use geospatial::python_api::{
+    PyFloodRiskLayer, PyReverseGeocoder, PySoilLayer, PyUrbanHeatIsland, PyVegetationLayer,
+};
 pub use python_bindings::EnrichmentBuilder;
 
 // The compiled name here (`_pyweatherenriched`) must match the last path
@@ -51,6 +53,9 @@ fn _pyweatherenriched(_py: Python, m: &pyo3::Bound<pyo3::types::PyModule>) -> Py
     m.add_class::<EnrichmentBuilder>()?;
     m.add_class::<PyReverseGeocoder>()?;
     m.add_class::<PyUrbanHeatIsland>()?;
+    m.add_class::<PyVegetationLayer>()?;
+    m.add_class::<PySoilLayer>()?;
+    m.add_class::<PyFloodRiskLayer>()?;
     m.add_function(wrap_pyfunction!(lapse_rate_adjustment, m)?)?;
     m.add_function(wrap_pyfunction!(terrain_roughness, m)?)?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;

@@ -7,11 +7,13 @@ Open-Meteo's Archive API, both genuinely fetched over the network (no
 fabricated/formula-generated data), with in-memory and optional
 SQLite-backed caching.
 
-`ReverseGeocoder` and `UrbanHeatIsland` read OSM GeoJSON tiles from an
-explicit local directory: reverse geocoding returns the nearest feature's
-real address fields, and UHI returns a building-density-derived model
-estimate. Both raise an error when the configured tile is missing rather
-than fabricating a result.
+`ReverseGeocoder`, `UrbanHeatIsland`, `VegetationLayer`, `SoilLayer`, and
+`FloodRiskLayer` read GeoJSON tiles from an explicit local directory:
+reverse geocoding returns the nearest feature's real address fields, UHI
+returns a building-density-derived model estimate, and the optional layers
+return the properties present in the tile. All raise an error when the
+configured tile or required property is missing rather than fabricating a
+result.
 
 `features` (and the re-exported `enrich_dataframe`) provide pandas/numpy
 climate feature engineering — rolling aggregates, heating/cooling
@@ -24,8 +26,11 @@ from pyweatherenriched._pyweatherenriched import (
     EnhancedCache,
     EnrichedRow,
     EnrichmentBuilder,
+    FloodRiskLayer,
     ReverseGeocoder,
+    SoilLayer,
     UrbanHeatIsland,
+    VegetationLayer,
     WeatherEnricher,
     __version__,
     lapse_rate_adjustment,
@@ -50,6 +55,9 @@ __all__ = [
     "EnrichmentBuilder",
     "ReverseGeocoder",
     "UrbanHeatIsland",
+    "VegetationLayer",
+    "SoilLayer",
+    "FloodRiskLayer",
     "lapse_rate_adjustment",
     "terrain_roughness",
     "features",

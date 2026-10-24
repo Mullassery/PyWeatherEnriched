@@ -8,6 +8,7 @@
 //! flood risk) and alternative reverse-geocoding providers are NOT exposed.
 
 use crate::geospatial::config::{DataSource, DataSourceConfig};
+use crate::geospatial::optional::{FloodRiskService, SoilService, VegetationService};
 use crate::geospatial::reverse_geocoding::ReverseGeocodingService;
 use crate::geospatial::urban_heat_island::UHIService;
 use pyo3::exceptions::{PyFileNotFoundError, PyRuntimeError, PyValueError};
@@ -160,6 +161,117 @@ impl PyUrbanHeatIsland {
 
     fn clear_cache(&self) {
         self.service.clear_cache();
+    }
+}
+
+/// Vegetation/NDVI layer backed by local GeoJSON tiles.
+#[pyclass(name = "VegetationLayer")]
+pub struct PyVegetationLayer {
+    service: VegetationService,
+}
+
+#[pymethods]
+impl PyVegetationLayer {
+    #[new]
+    #[pyo3(signature = (base_path, file_pattern = "{lat}_{lon}.geojson".to_string()))]
+    fn new(base_path: String, file_pattern: String) -> PyResult<Self> {
+        let config = local_config(base_path, file_pattern);
+        Ok(PyVegetationLayer {
+            service: VegetationService::new(&config).map_err(data_err)?,
+        })
+    }
+
+    fn get_data<'py>(
+        &self,
+        py: Python<'py>,
+        latitude: f64,
+        longitude: f64,
+    ) -> PyResult<Bound<'py, PyDict>> {
+        validate_coordinates(latitude, longitude).map_err(validation_err)?;
+        let result = self
+            .service
+            .get_data(latitude, longitude)
+            .map_err(data_err)?;
+        let out = PyDict::new(py);
+        out.set_item("ndvi", result.ndvi)?;
+        out.set_item("vegetation_type", result.vegetation_type)?;
+        out.set_item("cooling_effect_c", result.cooling_effect_c)?;
+        Ok(out)
+    }
+}
+
+/// Soil layer backed by local GeoJSON tiles.
+#[pyclass(name = "SoilLayer")]
+pub struct PySoilLayer {
+    service: SoilService,
+}
+
+#[pymethods]
+impl PySoilLayer {
+    #[new]
+    #[pyo3(signature = (base_path, file_pattern = "{lat}_{lon}.geojson".to_string()))]
+    fn new(base_path: String, file_pattern: String) -> PyResult<Self> {
+        let config = local_config(base_path, file_pattern);
+        Ok(PySoilLayer {
+            service: SoilService::new(&config).map_err(data_err)?,
+        })
+    }
+
+    fn get_data<'py>(
+        &self,
+        py: Python<'py>,
+        latitude: f64,
+        longitude: f64,
+    ) -> PyResult<Bound<'py, PyDict>> {
+        validate_coordinates(latitude, longitude).map_err(validation_err)?;
+        let result = self
+            .service
+            .get_data(latitude, longitude)
+            .map_err(data_err)?;
+        let out = PyDict::new(py);
+        out.set_item("texture", result.texture)?;
+        out.set_item(
+            "water_holding_capacity_mm",
+            result.water_holding_capacity_mm,
+        )?;
+        out.set_item("ph", result.ph)?;
+        Ok(out)
+    }
+}
+
+/// Flood-risk layer backed by local GeoJSON tiles.
+#[pyclass(name = "FloodRiskLayer")]
+pub struct PyFloodRiskLayer {
+    service: FloodRiskService,
+}
+
+#[pymethods]
+impl PyFloodRiskLayer {
+    #[new]
+    #[pyo3(signature = (base_path, file_pattern = "{lat}_{lon}.geojson".to_string()))]
+    fn new(base_path: String, file_pattern: String) -> PyResult<Self> {
+        let config = local_config(base_path, file_pattern);
+        Ok(PyFloodRiskLayer {
+            service: FloodRiskService::new(&config).map_err(data_err)?,
+        })
+    }
+
+    fn get_data<'py>(
+        &self,
+        py: Python<'py>,
+        latitude: f64,
+        longitude: f64,
+    ) -> PyResult<Bound<'py, PyDict>> {
+        validate_coordinates(latitude, longitude).map_err(validation_err)?;
+        let result = self
+            .service
+            .get_data(latitude, longitude)
+            .map_err(data_err)?;
+        let out = PyDict::new(py);
+        out.set_item("risk_score", result.risk_score)?;
+        out.set_item("risk_category", result.risk_category)?;
+        out.set_item("factors", result.factors)?;
+        Ok(out)
     }
 }
 

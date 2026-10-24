@@ -14,6 +14,10 @@ see `docs/internal/ROADMAP_HONEST.md` for detail.
 
 ## [Unreleased]
 
+### Added
+- Python bindings for GeoJSON-backed `VegetationLayer`, `SoilLayer`, and
+  `FloodRiskLayer`; missing tiles/properties raise real errors.
+
 ### Changed
 - Refreshed the lockfile for `rustls-webpki`, `webpki-roots`, and `tokio`;
   `cargo audit` is clean.

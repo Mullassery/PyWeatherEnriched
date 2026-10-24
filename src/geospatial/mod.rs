@@ -9,9 +9,9 @@
 //! - Elevation (SRTM): temperature lapse rate, wind adjustment
 //! - Urban Heat Island (OSM): building density, UHI effect
 //! - Reverse geocoding (OSM): nearest-feature postal code/address
-//! - Optional (`optional.rs`, deliberately unimplemented framework stubs):
-//!   vegetation (NDVI), soil, flood risk, Google Maps / USPS reverse
-//!   geocoding — not exposed to Python.
+//! - Optional (`optional.rs`, GeoJSON-tile-backed): vegetation (NDVI), soil,
+//!   flood risk — exposed to Python. Google Maps / USPS reverse geocoding
+//!   remain deliberately unimplemented.
 
 pub mod config;
 pub mod data_source;
@@ -118,30 +118,28 @@ impl GeospatialEnricher {
         let uhi = self.uhi_service.get_uhi_data(latitude, longitude)?;
 
         // Optional: Only if requested
-        let vegetation = if requested_layers.contains(&"vegetation") {
-            Some(
-                self.optional_services
-                    .vegetation
-                    .get_data(latitude, longitude)?,
-            )
-        } else {
-            None
+        let vegetation = match (
+            &self.optional_services.vegetation,
+            requested_layers.contains(&"vegetation"),
+        ) {
+            (Some(service), true) => Some(service.get_data(latitude, longitude)?),
+            _ => None,
         };
 
-        let soil = if requested_layers.contains(&"soil") {
-            Some(self.optional_services.soil.get_data(latitude, longitude)?)
-        } else {
-            None
+        let soil = match (
+            &self.optional_services.soil,
+            requested_layers.contains(&"soil"),
+        ) {
+            (Some(service), true) => Some(service.get_data(latitude, longitude)?),
+            _ => None,
         };
 
-        let flood_risk = if requested_layers.contains(&"flood_risk") {
-            Some(
-                self.optional_services
-                    .flood_risk
-                    .get_data(latitude, longitude)?,
-            )
-        } else {
-            None
+        let flood_risk = match (
+            &self.optional_services.flood_risk,
+            requested_layers.contains(&"flood_risk"),
+        ) {
+            (Some(service), true) => Some(service.get_data(latitude, longitude)?),
+            _ => None,
         };
 
         Ok(GeospatialContext {

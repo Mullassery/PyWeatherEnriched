@@ -6,7 +6,13 @@ import json
 
 import pytest
 
-from pyweatherenriched import ReverseGeocoder, UrbanHeatIsland
+from pyweatherenriched import (
+    FloodRiskLayer,
+    ReverseGeocoder,
+    SoilLayer,
+    UrbanHeatIsland,
+    VegetationLayer,
+)
 
 REVERSE_GEOJSON = {
     "type": "FeatureCollection",
@@ -120,8 +126,46 @@ def test_uhi_missing_tile_raises(tmp_path):
         uhi.get_uhi_data(40.0, -74.0)
 
 
-def test_optional_layers_and_alt_providers_are_not_exposed():
-    import pyweatherenriched
+def test_optional_layers_read_local_geojson_tiles(tmp_path):
+    (tmp_path / "40_-74.geojson").write_text(
+        json.dumps(
+            {
+                "type": "FeatureCollection",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "geometry": {"type": "Point", "coordinates": [-74.0, 40.7]},
+                        "properties": {
+                            "ndvi": 0.72,
+                            "vegetation_type": "forest",
+                            "cooling_effect_c": 2.1,
+                            "texture": "loam",
+                            "water_holding_capacity_mm": 180.0,
+                            "ph": 6.5,
+                            "risk_score": 0.42,
+                            "risk_category": "moderate",
+                            "factors": {"rainfall": 0.4},
+                        },
+                    }
+                ],
+            }
+        )
+    )
 
-    for name in ("Vegetation", "Soil", "FloodRisk", "GoogleMapsGeocoder"):
-        assert not hasattr(pyweatherenriched, name)
+    vegetation = VegetationLayer(str(tmp_path), "{lat}_{lon}.geojson").get_data(40.7, -74.0)
+    assert vegetation["ndvi"] == pytest.approx(0.72)
+    assert vegetation["vegetation_type"] == "forest"
+
+    soil = SoilLayer(str(tmp_path), "{lat}_{lon}.geojson").get_data(40.7, -74.0)
+    assert soil["texture"] == "loam"
+    assert soil["water_holding_capacity_mm"] == pytest.approx(180.0)
+    assert soil["ph"] == pytest.approx(6.5)
+
+    flood = FloodRiskLayer(str(tmp_path), "{lat}_{lon}.geojson").get_data(40.7, -74.0)
+    assert flood["risk_category"] == "moderate"
+    assert flood["factors"]["rainfall"] == pytest.approx(0.4)
+
+
+def test_missing_optional_tile_is_an_error(tmp_path):
+    with pytest.raises(FileNotFoundError):
+        VegetationLayer(str(tmp_path), "{lat}_{lon}.geojson").get_data(40.7, -74.0)

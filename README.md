@@ -58,10 +58,12 @@ weather into an ML pipeline.
 - **UHI is a model estimate, not an observation.** `UrbanHeatIsland` computes building
   density/height from real OSM footprints and applies the project's documented formula;
   it does not measure actual urban heat.
-- **Some layers are deliberately unimplemented.** Vegetation/NDVI, soil, and flood-risk
-  layers, plus additional commercial reverse-geocoding provider backends, are framework
-  stubs (`src/geospatial/optional.rs`) that return a clear "not yet implemented" error
-  rather than fake data.
+- **Optional layers are GeoJSON-backed.** `VegetationLayer`, `SoilLayer`, and
+  `FloodRiskLayer` read user-supplied GeoJSON tiles and return the properties present
+  in the tile (`ndvi`/`vegetation_type`, `texture`/`water_holding_capacity_mm`/`ph`,
+  `risk_score`/`risk_category`). Missing tiles or required properties raise an error
+  rather than fabricating values. Google Maps/USPS reverse geocoding remain
+  unimplemented; the OSM/Nominatim path is the supported one.
 - **Not fully covered by `cargo test`.** Plain `cargo test` (without `--lib`) currently
   fails to compile because a stale integration test references source files not declared as
   `mod`s in `src/lib.rs`. Use `cargo test --lib`.

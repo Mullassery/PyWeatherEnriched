@@ -77,15 +77,13 @@ audit; see `CHANGELOG.md`'s `[Unreleased]` section for what changed).
   `src/database.rs`, etc.) themselves are untouched — see "Orphaned
   source files" below, still needs a real wire-up-or-delete decision.
 
-## 4. Not built / deliberately unimplemented
+## 4. Optional geospatial layers
 
-`src/geospatial/optional.rs` — `VegetationService`, `SoilService`,
-`FloodRiskService`, `GoogleMapsReverseGeocoder`, `USPSPostalDatabase` are
-framework stubs whose methods return a real `Err("... not yet
-implemented")` rather than fabricated data (verified by reading
-`optional.rs:29-31`, `:49-51`, `:68-70`, `:92-94`, `:116`). This is
-honest, correct behavior for an unimplemented feature — flagged here only
-for completeness, not as a problem.
+`VegetationLayer`, `SoilLayer`, and `FloodRiskLayer` are now real,
+GeoJSON-tile-backed services exposed to Python. They return only properties
+present in the tile and error on missing tiles/properties. Google Maps and
+USPS reverse geocoding remain deliberately unimplemented (use the
+OSM/Nominatim path).
 
 ---
 

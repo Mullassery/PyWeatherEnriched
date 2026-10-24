@@ -100,7 +100,7 @@ impl GeospatialConfig {
             vegetation: Some(DataSourceConfig {
                 source: DataSource::LocalFile {
                     base_path: base_path.clone(),
-                    file_pattern: "sentinel/ndvi/{year}_{month:02d}.tif".to_string(),
+                    file_pattern: "sentinel/ndvi/{lat}_{lon}.geojson".to_string(),
                 },
                 cache_ttl_seconds: 86400 * 30,
                 timeout_seconds: 10,
@@ -108,7 +108,7 @@ impl GeospatialConfig {
             soil: Some(DataSourceConfig {
                 source: DataSource::LocalFile {
                     base_path: base_path.clone(),
-                    file_pattern: "soilgrids/soil_{lat}_{lon}.tif".to_string(),
+                    file_pattern: "soilgrids/soil_{lat}_{lon}.geojson".to_string(),
                 },
                 cache_ttl_seconds: 86400 * 30,
                 timeout_seconds: 10,
@@ -116,7 +116,7 @@ impl GeospatialConfig {
             flood_risk: Some(DataSourceConfig {
                 source: DataSource::LocalFile {
                     base_path,
-                    file_pattern: "hazards/flood_risk_{lat}_{lon}.tif".to_string(),
+                    file_pattern: "hazards/flood_risk_{lat}_{lon}.geojson".to_string(),
                 },
                 cache_ttl_seconds: 86400 * 30,
                 timeout_seconds: 10,
