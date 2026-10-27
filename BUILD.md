@@ -1,7 +1,7 @@
 # Build Instructions
 
 PyWeatherEnriched is source-available on GitHub at
-https://github.com/Mullassery/PyWeatherEnriched under the Apache License 2.0
+../PyWeatherEnriched under the Apache License 2.0
 (see `LICENSE`). It is intended to ship to PyPI as prebuilt wheels, but see
 the "Distribution Policy" note below — the CI→PyPI publish step is
 currently broken, so only a macOS ARM64 wheel is actually published today.
@@ -163,14 +163,14 @@ dependency other than `reqwest`; report it rather than assuming
 ## Support
 
 For build issues:
-- GitHub Issues: https://github.com/Mullassery/PyWeatherEnriched/issues
+- GitHub Issues: ../PyWeatherEnriched/issues
 - Email: mullassery@gmail.com
 
 ## Development Setup
 
 ```bash
 # Clone repository
-git clone https://github.com/Mullassery/PyWeatherEnriched.git
+git clone ../PyWeatherEnriched
 cd PyWeatherEnriched
 
 # Build development mode (installs the extension into your active venv)

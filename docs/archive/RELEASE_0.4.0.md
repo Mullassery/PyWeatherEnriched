@@ -202,7 +202,7 @@ pip install --upgrade pyweatherenriched
 
 ### From Source
 ```bash
-git clone https://github.com/Mullassery/PyWeatherEnriched.git
+git clone ../PyWeatherEnriched
 cd PyWeatherEnriched
 cargo build --release
 maturin build --release
@@ -250,9 +250,9 @@ results = parallel.enrich_batch(rows)  # 5x faster
 ## Support & Feedback
 
 - 📧 **Email:** mullassery@gmail.com
-- 🐛 **Report Issues:** https://github.com/Mullassery/PyWeatherEnriched/issues
+- 🐛 **Report Issues:** ../PyWeatherEnriched/issues
 - 📚 **Documentation:** https://github.com/Mullassery/PyWeatherEnriched#readme
-- 💬 **Discussions:** https://github.com/Mullassery/PyWeatherEnriched/discussions
+- 💬 **Discussions:** ../PyWeatherEnriched/discussions
 
 ---
 

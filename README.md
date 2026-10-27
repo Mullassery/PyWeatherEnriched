@@ -5,7 +5,7 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/pyweatherenriched)](https://pypi.org/project/pyweatherenriched/)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org)
-[![Tests](https://github.com/Mullassery/PyWeatherEnriched/actions/workflows/tests.yml/badge.svg)](https://github.com/Mullassery/PyWeatherEnriched/actions/workflows/tests.yml)
+[![Tests](../PyWeatherEnriched/actions/workflows/tests.yml/badge.svg)](../PyWeatherEnriched/actions/workflows/tests.yml)
 
 ## What it is
 
@@ -296,7 +296,7 @@ Full shipped/blocked/rejected detail: [`docs/internal/QUEUE_STATUS.md`](docs/int
 ## Contributing
 
 ```bash
-git clone https://github.com/Mullassery/PyWeatherEnriched.git
+git clone ../PyWeatherEnriched
 cd PyWeatherEnriched
 
 maturin develop --release   # build the Rust extension + install editable
@@ -313,13 +313,13 @@ reach Nominatim and Open-Meteo.
 
 Other tools from the same family, for adjacent parts of the data/ML stack:
 
-- [PySynthData](https://github.com/Mullassery/PySynthData) — synthetic data generation for ML training: realistic datasets for model development and testing.
-- [StatGuardian](https://github.com/Mullassery/StatGuardian) — fast, declarative data quality framework (Rust): schema validation, drift detection, anomaly detection.
-- [PyReverseETL](https://github.com/Mullassery/PyReverseETL) — reverse ETL runtime: move data into CRMs and marketing tools with lineage and compliance enforcement.
-- [PyDBTGuard](https://github.com/Mullassery/PyDBTGuard) — analyzes a dbt project's `manifest.json` to flag risky tests, map blast radius, and estimate test cost.
-- [PyAirflowTester](https://github.com/Mullassery/PyAirflowTester) — dependency intelligence and quality assurance for Airflow and dbt pipelines.
+- [PySynthData](../PySynthData) — synthetic data generation for ML training: realistic datasets for model development and testing.
+- [StatGuardian](../StatGuardian) — fast, declarative data quality framework (Rust): schema validation, drift detection, anomaly detection.
+- [PyReverseETL](../PyReverseETL) — reverse ETL runtime: move data into CRMs and marketing tools with lineage and compliance enforcement.
+- [PyDBTGuard](../PyDBTGuard) — analyzes a dbt project's `manifest.json` to flag risky tests, map blast radius, and estimate test cost.
+- [PyAirflowTester](../PyAirflowTester) — dependency intelligence and quality assurance for Airflow and dbt pipelines.
 
-[Browse all projects →](https://github.com/Mullassery?tab=repositories)
+[Browse all projects →](../Mullassery-profile)
 
 ## License
 

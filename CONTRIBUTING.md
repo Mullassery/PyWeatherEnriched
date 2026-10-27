@@ -5,7 +5,7 @@ Thanks for considering a contribution to PyWeatherEnriched.
 ## Development setup
 
 ```bash
-git clone https://github.com/Mullassery/PyWeatherEnriched.git
+git clone ../PyWeatherEnriched
 cd PyWeatherEnriched
 
 python3 -m venv .venv && source .venv/bin/activate
